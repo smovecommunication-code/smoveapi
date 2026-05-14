@@ -1,0 +1,771 @@
+{
+  "schemaVersion": 3,
+  "blogPosts": [
+    {
+      "id": "1",
+      "title": "Création de site web pour SMOVE",
+      "slug": "creation-site-web-smove",
+      "excerpt": "SMOVE propose une vision moderne du web africain, tournée vers l'innovation et l'excellence digitale.",
+      "content": "## Introduction\n\nSMOVE Communication révolutionne le paysage digital africain avec sa nouvelle plateforme web. Ce projet ambitieux combine design moderne, performance technique et expérience utilisateur exceptionnelle.",
+      "author": "Spencer Tarring",
+      "authorRole": "Lead Developer",
+      "category": "Développement Web",
+      "tags": [
+        "React",
+        "Web Design",
+        "Performance",
+        "Innovation"
+      ],
+      "publishedDate": "2024-02-01T00:00:00.000Z",
+      "readTime": "5 min",
+      "featuredImage": "modern website design smove platform",
+      "images": [
+        "web development coding modern"
+      ],
+      "status": "published",
+      "seo": {
+        "title": "Création de site web pour SMOVE",
+        "description": "SMOVE propose une vision moderne du web africain, tournée vers l'innovation et l'excellence digitale.",
+        "canonicalSlug": "creation-site-web-smove",
+        "socialImage": "modern website design smove platform",
+        "noIndex": false,
+        "canonicalUrl": ""
+      },
+      "mediaRoles": {
+        "featuredImage": "modern website design smove platform",
+        "coverImage": "modern website design smove platform",
+        "cardImage": "modern website design smove platform",
+        "socialImage": "modern website design smove platform"
+      }
+    },
+    {
+      "id": "2",
+      "title": "Communication d'entreprise pour ECLA BTP",
+      "slug": "communication-entreprise-ecla-btp",
+      "excerpt": "Création de vidéo et affiche publicitaire pour se démarquer dans le secteur du BTP.",
+      "content": "## Le Projet\n\nECLA BTP souhaitait moderniser sa communication pour mieux refléter son positionnement premium dans le secteur de la construction.",
+      "author": "James Rodd",
+      "authorRole": "Creative Director",
+      "category": "Communication",
+      "tags": [
+        "Vidéo",
+        "Branding",
+        "Corporate",
+        "BTP"
+      ],
+      "publishedDate": "2024-01-28T00:00:00.000Z",
+      "readTime": "4 min",
+      "featuredImage": "corporate video production professional",
+      "images": [
+        "video production studio"
+      ],
+      "status": "published",
+      "seo": {
+        "title": "Communication d'entreprise pour ECLA BTP",
+        "description": "Création de vidéo et affiche publicitaire pour se démarquer dans le secteur du BTP.",
+        "canonicalSlug": "communication-entreprise-ecla-btp",
+        "socialImage": "corporate video production professional",
+        "noIndex": false,
+        "canonicalUrl": ""
+      },
+      "mediaRoles": {
+        "featuredImage": "corporate video production professional",
+        "coverImage": "corporate video production professional",
+        "cardImage": "corporate video production professional",
+        "socialImage": "corporate video production professional"
+      }
+    },
+    {
+      "id": "3",
+      "title": "Création de logo et visuels pour Gobon Sarl",
+      "slug": "logo-visuels-gobon-sarl",
+      "excerpt": "Logo et visuels pour une identité commerciale remarquée dans le secteur alimentaire.",
+      "content": "## Contexte\n\nGobon Sarl, entreprise de distribution alimentaire, avait besoin d'une identité visuelle forte pour se démarquer sur un marché concurrentiel.",
+      "author": "David Silvester",
+      "authorRole": "Brand Designer",
+      "category": "Branding",
+      "tags": [
+        "Logo Design",
+        "Identité Visuelle",
+        "Branding",
+        "Food"
+      ],
+      "publishedDate": "2024-01-25T00:00:00.000Z",
+      "readTime": "6 min",
+      "featuredImage": "logo design creative professional",
+      "images": [
+        "brand identity design mockup"
+      ],
+      "status": "published",
+      "seo": {
+        "title": "Création de logo et visuels pour Gobon Sarl",
+        "description": "Logo et visuels pour une identité commerciale remarquée dans le secteur alimentaire.",
+        "canonicalSlug": "logo-visuels-gobon-sarl",
+        "socialImage": "logo design creative professional",
+        "noIndex": false,
+        "canonicalUrl": ""
+      },
+      "mediaRoles": {
+        "featuredImage": "logo design creative professional",
+        "coverImage": "logo design creative professional",
+        "cardImage": "logo design creative professional",
+        "socialImage": "logo design creative professional"
+      }
+    }
+  ],
+  "projects": [
+    {
+      "id": "smove-platform",
+      "title": "Plateforme SMOVE Digital",
+      "slug": "plateforme-smove-digital",
+      "client": "SMOVE Communication",
+      "category": "Développement Web",
+      "year": "2024",
+      "summary": "Création d'une plateforme web moderne pour la gestion de projets digitaux et la communication client.",
+      "description": "Création d'une plateforme web moderne pour la gestion de projets digitaux et la communication client.",
+      "challenge": "Développer une solution complète permettant de gérer tous les aspects de la communication digitale en un seul endroit.",
+      "solution": "Architecture web progressive avec React, système de gestion de contenu intégré, dashboard analytique et interface client intuitive.",
+      "results": [
+        "Réduction de 60% du temps de gestion de projet",
+        "Augmentation de 45% de la satisfaction client",
+        "Interface utilisateur primée pour son design",
+        "100% responsive sur tous les appareils"
+      ],
+      "tags": [
+        "React",
+        "Node.js",
+        "MongoDB",
+        "UI/UX",
+        "Dashboard"
+      ],
+      "featuredImage": "modern web platform dashboard interface",
+      "mainImage": "modern web platform dashboard interface",
+      "images": [
+        "web dashboard analytics colorful",
+        "project management interface modern",
+        "client portal design clean"
+      ],
+      "status": "published",
+      "featured": true,
+      "testimonial": {
+        "text": "SMOVE a transformé notre façon de travailler. La plateforme est intuitive, rapide et répond parfaitement à nos besoins.",
+        "author": "Jean-Marc Kouassi",
+        "position": "Directeur Général"
+      },
+      "imageAlt": "Plateforme SMOVE Digital",
+      "mediaRoles": {
+        "cardImage": "modern web platform dashboard interface",
+        "heroImage": "modern web platform dashboard interface",
+        "coverImage": "modern web platform dashboard interface",
+        "socialImage": "modern web platform dashboard interface",
+        "galleryImages": [
+          "web dashboard analytics colorful",
+          "project management interface modern",
+          "client portal design clean"
+        ]
+      },
+      "seo": {
+        "title": "Plateforme SMOVE Digital",
+        "description": "Création d'une plateforme web moderne pour la gestion de projets digitaux et la communication client.",
+        "canonicalSlug": "plateforme-smove-digital",
+        "socialImage": "modern web platform dashboard interface"
+      },
+      "createdAt": "2026-04-08T17:11:34.778Z",
+      "updatedAt": "2026-04-08T17:11:34.778Z"
+    },
+    {
+      "id": "ecla-btp-branding",
+      "title": "Identité Visuelle ECLA BTP",
+      "slug": "identite-visuelle-ecla-btp",
+      "client": "ECLA BTP",
+      "category": "Branding",
+      "year": "2024",
+      "summary": "Refonte complète de l'identité visuelle d'une entreprise de construction leader en Côte d'Ivoire.",
+      "description": "Refonte complète de l'identité visuelle d'une entreprise de construction leader en Côte d'Ivoire.",
+      "challenge": "Moderniser l'image de marque tout en conservant la crédibilité et l'héritage de l'entreprise.",
+      "solution": "Nouveau logo symbolisant la solidité et l’innovation, charte graphique professionnelle, supports de communication print et digital.",
+      "results": [
+        "Augmentation de 80% de la reconnaissance de marque",
+        "Nouveau positionnement premium sur le marché",
+        "Cohérence visuelle sur tous les supports",
+        "Impact immédiat sur les réseaux sociaux"
+      ],
+      "tags": [
+        "Logo Design",
+        "Branding",
+        "Print",
+        "Digital",
+        "Charte Graphique"
+      ],
+      "featuredImage": "construction company branding modern",
+      "mainImage": "construction company branding modern",
+      "images": [
+        "logo design construction professional",
+        "brand identity mockup business cards",
+        "corporate branding materials"
+      ],
+      "status": "published",
+      "testimonial": {
+        "text": "Notre nouvelle identité visuelle nous a donné une image beaucoup plus moderne et professionnelle. Les retours sont excellents!",
+        "author": "Marie Koné",
+        "position": "Directrice Marketing, ECLA BTP"
+      },
+      "imageAlt": "Identité Visuelle ECLA BTP",
+      "mediaRoles": {
+        "cardImage": "construction company branding modern",
+        "heroImage": "construction company branding modern",
+        "coverImage": "construction company branding modern",
+        "socialImage": "construction company branding modern",
+        "galleryImages": [
+          "logo design construction professional",
+          "brand identity mockup business cards",
+          "corporate branding materials"
+        ]
+      },
+      "seo": {
+        "title": "Identité Visuelle ECLA BTP",
+        "description": "Refonte complète de l'identité visuelle d'une entreprise de construction leader en Côte d'Ivoire.",
+        "canonicalSlug": "identite-visuelle-ecla-btp",
+        "socialImage": "construction company branding modern"
+      },
+      "featured": false,
+      "createdAt": "2026-04-08T17:11:34.778Z",
+      "updatedAt": "2026-04-08T17:11:34.778Z"
+    },
+    {
+      "id": "gobon-sarl-ecommerce",
+      "title": "Boutique en Ligne Gobon Sarl",
+      "slug": "boutique-en-ligne-gobon-sarl",
+      "client": "Gobon Sarl",
+      "category": "E-commerce",
+      "year": "2023",
+      "summary": "Développement d’une boutique en ligne complète pour la vente de produits alimentaires avec système de livraison.",
+      "description": "Développement d’une boutique en ligne complète pour la vente de produits alimentaires avec système de livraison.",
+      "challenge": "Créer une expérience d’achat fluide adaptée au marché local avec paiement mobile intégré.",
+      "solution": "Plateforme e-commerce sur mesure avec paiement mobile money, gestion des stocks, tracking de livraison et interface administrateur.",
+      "results": [
+        "Lancement réussi avec 1000+ commandes le premier mois",
+        "Taux de conversion de 3.8% (supérieur à la moyenne)",
+        "Intégration parfaite des paiements mobiles",
+        "Système de livraison optimisé pour Abidjan"
+      ],
+      "tags": [
+        "E-commerce",
+        "Next.js",
+        "Payment Integration",
+        "Mobile",
+        "Logistics"
+      ],
+      "featuredImage": "ecommerce website african products",
+      "mainImage": "ecommerce website african products",
+      "images": [
+        "online store modern clean design",
+        "shopping cart checkout process",
+        "mobile ecommerce app interface"
+      ],
+      "status": "published",
+      "testimonial": {
+        "text": "Grâce à SMOVE, nous avons pu digitaliser notre commerce en un temps record. Les ventes en ligne dépassent nos attentes!",
+        "author": "Ibrahim Traoré",
+        "position": "PDG, Gobon Sarl"
+      },
+      "imageAlt": "Boutique en Ligne Gobon Sarl",
+      "mediaRoles": {
+        "cardImage": "ecommerce website african products",
+        "heroImage": "ecommerce website african products",
+        "coverImage": "ecommerce website african products",
+        "socialImage": "ecommerce website african products",
+        "galleryImages": [
+          "online store modern clean design",
+          "shopping cart checkout process",
+          "mobile ecommerce app interface"
+        ]
+      },
+      "seo": {
+        "title": "Boutique en Ligne Gobon Sarl",
+        "description": "Développement d’une boutique en ligne complète pour la vente de produits alimentaires avec système de livraison.",
+        "canonicalSlug": "boutique-en-ligne-gobon-sarl",
+        "socialImage": "ecommerce website african products"
+      },
+      "featured": false,
+      "createdAt": "2026-04-08T17:11:34.778Z",
+      "updatedAt": "2026-04-08T17:11:34.778Z"
+    },
+    {
+      "id": "restaurant-afrik-taste",
+      "title": "Application Mobile Afrik Taste",
+      "slug": "application-mobile-afrik-taste",
+      "client": "Afrik Taste Restaurant",
+      "category": "Application Mobile",
+      "year": "2023",
+      "summary": "Application mobile de commande et livraison pour une chaîne de restaurants ivoiriens.",
+      "description": "Application mobile de commande et livraison pour une chaîne de restaurants ivoiriens.",
+      "challenge": "Offrir une expérience de commande simple et rapide avec suivi en temps réel de la livraison.",
+      "solution": "Application native iOS/Android avec menu interactif, personnalisation des plats, paiement intégré et suivi GPS de livraison.",
+      "results": [
+        "50,000+ téléchargements en 3 mois",
+        "Note moyenne de 4.8/5 sur les stores",
+        "Augmentation de 120% des commandes",
+        "Fidélisation client améliorée de 65%"
+      ],
+      "tags": [
+        "React Native",
+        "Mobile App",
+        "GPS",
+        "Payment",
+        "Real-time"
+      ],
+      "featuredImage": "restaurant mobile app food delivery",
+      "mainImage": "restaurant mobile app food delivery",
+      "images": [
+        "food delivery app interface colorful",
+        "restaurant menu app design",
+        "order tracking map mobile"
+      ],
+      "status": "published",
+      "testimonial": {
+        "text": "L'application a révolutionné notre business. Nos clients adorent la simplicité et la rapidité du service.",
+        "author": "Fatou Diallo",
+        "position": "Directrice, Afrik Taste"
+      },
+      "imageAlt": "Application Mobile Afrik Taste",
+      "mediaRoles": {
+        "cardImage": "restaurant mobile app food delivery",
+        "heroImage": "restaurant mobile app food delivery",
+        "coverImage": "restaurant mobile app food delivery",
+        "socialImage": "restaurant mobile app food delivery",
+        "galleryImages": [
+          "food delivery app interface colorful",
+          "restaurant menu app design",
+          "order tracking map mobile"
+        ]
+      },
+      "seo": {
+        "title": "Application Mobile Afrik Taste",
+        "description": "Application mobile de commande et livraison pour une chaîne de restaurants ivoiriens.",
+        "canonicalSlug": "application-mobile-afrik-taste",
+        "socialImage": "restaurant mobile app food delivery"
+      },
+      "featured": false,
+      "createdAt": "2026-04-08T17:11:34.778Z",
+      "updatedAt": "2026-04-08T17:11:34.778Z"
+    },
+    {
+      "id": "ministry-campaign",
+      "title": "Campagne Digitale Ministère",
+      "slug": "campagne-digitale-ministere",
+      "client": "Ministère de la Jeunesse",
+      "category": "Communication Digitale",
+      "year": "2023",
+      "summary": "Campagne de communication digitale pour promouvoir l'entrepreneuriat jeune en Côte d'Ivoire.",
+      "description": "Campagne de communication digitale pour promouvoir l'entrepreneuriat jeune en Côte d'Ivoire.",
+      "challenge": "Atteindre et engager les jeunes sur les réseaux sociaux avec un message impactant.",
+      "solution": "Stratégie multicanal, vidéos virales, motion design, community management et influenceurs.",
+      "results": [
+        "5 millions de vues sur les réseaux sociaux",
+        "200,000+ interactions (likes, partages, commentaires)",
+        "Augmentation de 300% des inscriptions au programme",
+        "Tendance #1 sur Twitter Côte d'Ivoire pendant 3 jours"
+      ],
+      "tags": [
+        "Social Media",
+        "Video",
+        "Motion Design",
+        "Strategy",
+        "Influencers"
+      ],
+      "featuredImage": "social media campaign colorful youth",
+      "mainImage": "social media campaign colorful youth",
+      "images": [
+        "social media graphics modern vibrant",
+        "video production studio creative",
+        "digital campaign analytics dashboard"
+      ],
+      "status": "published",
+      "imageAlt": "Campagne Digitale Ministère",
+      "mediaRoles": {
+        "cardImage": "social media campaign colorful youth",
+        "heroImage": "social media campaign colorful youth",
+        "coverImage": "social media campaign colorful youth",
+        "socialImage": "social media campaign colorful youth",
+        "galleryImages": [
+          "social media graphics modern vibrant",
+          "video production studio creative",
+          "digital campaign analytics dashboard"
+        ]
+      },
+      "seo": {
+        "title": "Campagne Digitale Ministère",
+        "description": "Campagne de communication digitale pour promouvoir l'entrepreneuriat jeune en Côte d'Ivoire.",
+        "canonicalSlug": "campagne-digitale-ministere",
+        "socialImage": "social media campaign colorful youth"
+      },
+      "featured": false,
+      "createdAt": "2026-04-08T17:11:34.778Z",
+      "updatedAt": "2026-04-08T17:11:34.778Z"
+    },
+    {
+      "id": "bank-mobile-app",
+      "title": "Application Bancaire Mobile",
+      "slug": "application-bancaire-mobile",
+      "client": "Banque Atlantique CI",
+      "category": "FinTech",
+      "year": "2024",
+      "summary": "Application mobile bancaire nouvelle génération avec fonctionnalités avancées.",
+      "description": "Application mobile bancaire nouvelle génération avec fonctionnalités avancées.",
+      "challenge": "Créer une expérience bancaire mobile sécurisée, rapide et intuitive pour tous les âges.",
+      "solution": "Architecture sécurisée, biométrie, virements instantanés, gestion de budget AI, notifications intelligentes.",
+      "results": [
+        "200,000+ utilisateurs actifs",
+        "Réduction de 70% des visites en agence",
+        "Transactions 5x plus rapides",
+        "Sécurité renforcée avec authentification biométrique"
+      ],
+      "tags": [
+        "FinTech",
+        "Mobile",
+        "Security",
+        "AI",
+        "Banking"
+      ],
+      "featuredImage": "mobile banking app modern secure",
+      "mainImage": "mobile banking app modern secure",
+      "images": [
+        "banking app interface clean professional",
+        "payment transfer mobile design",
+        "financial dashboard mobile analytics"
+      ],
+      "status": "published",
+      "imageAlt": "Application Bancaire Mobile",
+      "mediaRoles": {
+        "cardImage": "mobile banking app modern secure",
+        "heroImage": "mobile banking app modern secure",
+        "coverImage": "mobile banking app modern secure",
+        "socialImage": "mobile banking app modern secure",
+        "galleryImages": [
+          "banking app interface clean professional",
+          "payment transfer mobile design",
+          "financial dashboard mobile analytics"
+        ]
+      },
+      "seo": {
+        "title": "Application Bancaire Mobile",
+        "description": "Application mobile bancaire nouvelle génération avec fonctionnalités avancées.",
+        "canonicalSlug": "application-bancaire-mobile",
+        "socialImage": "mobile banking app modern secure"
+      },
+      "featured": false,
+      "createdAt": "2026-04-08T17:11:34.778Z",
+      "updatedAt": "2026-04-08T17:11:34.778Z"
+    },
+    {
+      "id": "fashion-brand-3d",
+      "title": "Expérience 3D Marque de Mode",
+      "slug": "experience-3d-marque-de-mode",
+      "client": "Ivoire Fashion House",
+      "category": "Création 3D",
+      "year": "2024",
+      "summary": "Création d'une expérience 3D immersive pour le lancement d'une collection de mode.",
+      "description": "Création d'une expérience 3D immersive pour le lancement d'une collection de mode.",
+      "challenge": "Se démarquer lors du lancement avec une expérience digitale innovante et mémorable.",
+      "solution": "Showroom virtuel 3D, essayage virtuel AR, vidéo 3D de défilé et configurateur de produits interactif.",
+      "results": [
+        "Expérience partagée 100,000+ fois",
+        "Temps d'engagement moyen de 8 minutes",
+        "Conversion augmentée de 150%",
+        "Couverture médiatique nationale et internationale"
+      ],
+      "tags": [
+        "3D Modeling",
+        "AR",
+        "Virtual Showroom",
+        "Interactive",
+        "Fashion"
+      ],
+      "featuredImage": "3d fashion virtual showroom",
+      "mainImage": "3d fashion virtual showroom",
+      "images": [
+        "3d modeling fashion design",
+        "augmented reality clothing app",
+        "virtual reality shopping experience"
+      ],
+      "status": "published",
+      "imageAlt": "Expérience 3D Marque de Mode",
+      "mediaRoles": {
+        "cardImage": "3d fashion virtual showroom",
+        "heroImage": "3d fashion virtual showroom",
+        "coverImage": "3d fashion virtual showroom",
+        "socialImage": "3d fashion virtual showroom",
+        "galleryImages": [
+          "3d modeling fashion design",
+          "augmented reality clothing app",
+          "virtual reality shopping experience"
+        ]
+      },
+      "seo": {
+        "title": "Expérience 3D Marque de Mode",
+        "description": "Création d'une expérience 3D immersive pour le lancement d'une collection de mode.",
+        "canonicalSlug": "experience-3d-marque-de-mode",
+        "socialImage": "3d fashion virtual showroom"
+      },
+      "featured": false,
+      "createdAt": "2026-04-08T17:11:34.778Z",
+      "updatedAt": "2026-04-08T17:11:34.778Z"
+    },
+    {
+      "id": "education-platform",
+      "title": "Plateforme E-Learning",
+      "slug": "plateforme-e-learning",
+      "client": "Université Virtuelle CI",
+      "category": "EdTech",
+      "year": "2023",
+      "summary": "Plateforme complète d'apprentissage en ligne avec cours interactifs et certifications.",
+      "description": "Plateforme complète d'apprentissage en ligne avec cours interactifs et certifications.",
+      "challenge": "Rendre l'éducation accessible et engageante pour des milliers d'étudiants à distance.",
+      "solution": "LMS complet avec vidéos HD, quizz interactifs, forums, suivi de progression et certifications automatiques.",
+      "results": [
+        "15,000+ étudiants inscrits",
+        "500+ cours disponibles",
+        "Taux de complétion de 78%",
+        "Certification reconnue par l'État"
+      ],
+      "tags": [
+        "EdTech",
+        "LMS",
+        "Video Streaming",
+        "Gamification",
+        "Certificates"
+      ],
+      "featuredImage": "online learning platform modern",
+      "mainImage": "online learning platform modern",
+      "images": [
+        "elearning dashboard student interface",
+        "video course player interactive",
+        "certification system online education"
+      ],
+      "status": "published",
+      "imageAlt": "Plateforme E-Learning",
+      "mediaRoles": {
+        "cardImage": "online learning platform modern",
+        "heroImage": "online learning platform modern",
+        "coverImage": "online learning platform modern",
+        "socialImage": "online learning platform modern",
+        "galleryImages": [
+          "elearning dashboard student interface",
+          "video course player interactive",
+          "certification system online education"
+        ]
+      },
+      "seo": {
+        "title": "Plateforme E-Learning",
+        "description": "Plateforme complète d'apprentissage en ligne avec cours interactifs et certifications.",
+        "canonicalSlug": "plateforme-e-learning",
+        "socialImage": "online learning platform modern"
+      },
+      "featured": false,
+      "createdAt": "2026-04-08T17:11:34.778Z",
+      "updatedAt": "2026-04-08T17:11:34.778Z"
+    }
+  ],
+  "mediaFiles": [
+    {
+      "id": "media_1775322547408_17d52cc6",
+      "name": "IMG-20240701-WA0019-1.jpg",
+      "title": "IMG-20240701-WA0019-1.jpg",
+      "label": "IMG-20240701-WA0019-1.jpg",
+      "type": "image",
+      "url": "/uploads/2026/04/img-20240701-wa0019-1-media_1775322547408_17d52cc6.jpg",
+      "thumbnailUrl": "/uploads/2026/04/img-20240701-wa0019-1-media_1775322547408_17d52cc6.jpg",
+      "size": 54185,
+      "uploadedDate": "2026-04-04T17:09:07.409Z",
+      "uploadedBy": "201ec4d3-3823-4bb2-8ae5-04643af65fea",
+      "alt": "IMG-20240701-WA0019-1.jpg",
+      "caption": "IMG-20240701-WA0019-1.jpg",
+      "tags": [],
+      "source": "local-disk",
+      "metadata": {
+        "mimeType": "image/jpeg",
+        "checksumSha256": "e97bf4742cf9985f5cada2e3c200bbd8794a764301e8a6e5d84a2c23fc8ae53a",
+        "license": "",
+        "focalPoint": ""
+      },
+      "createdAt": "2026-04-04T17:09:07.409Z",
+      "updatedAt": "2026-04-04T17:09:28.526Z"
+    },
+    {
+      "id": "media_1775322568524_8732ab72",
+      "name": "ChatGPT Image 16 déc. 2025, 10_35_21.png",
+      "title": "ChatGPT Image 16 déc. 2025, 10_35_21.png",
+      "label": "ChatGPT Image 16 déc. 2025, 10_35_21.png",
+      "type": "image",
+      "url": "/uploads/2026/04/chatgpt-image-16-d-c.-2025-10_35_21-media_1775322568524_8732ab72.png",
+      "thumbnailUrl": "/uploads/2026/04/chatgpt-image-16-d-c.-2025-10_35_21-media_1775322568524_8732ab72.png",
+      "size": 518469,
+      "uploadedDate": "2026-04-04T17:09:28.525Z",
+      "uploadedBy": "201ec4d3-3823-4bb2-8ae5-04643af65fea",
+      "alt": "ChatGPT Image 16 déc. 2025, 10_35_21.png",
+      "caption": "ChatGPT Image 16 déc. 2025, 10_35_21.png",
+      "tags": [],
+      "source": "local-disk",
+      "metadata": {
+        "mimeType": "image/png",
+        "checksumSha256": "5aa321997c78ac15bda4f7c19ac90e1c7a5fb096913dbb0a2c408b6465db7173",
+        "license": "",
+        "focalPoint": ""
+      },
+      "createdAt": "2026-04-04T17:09:28.525Z",
+      "updatedAt": "2026-04-04T17:09:28.525Z"
+    }
+  ],
+  "services": [
+    {
+      "id": "design-branding",
+      "title": "Design & Branding",
+      "slug": "design-branding",
+      "description": "Création d'interfaces immersives, animations 3D et expériences interactives, de logo et d'identité visuels.",
+      "shortDescription": "Identité visuelle, branding et design d’expériences.",
+      "color": "from-[#00b3e8] to-[#00c0e8]",
+      "icon": "palette",
+      "features": [
+        "Logo & Identité",
+        "UI/UX Design",
+        "Charte Graphique",
+        "Motion Design"
+      ],
+      "status": "published",
+      "featured": true,
+      "routeSlug": "design-branding",
+      "processSteps": [],
+      "seo": {
+        "title": "Design & Branding",
+        "description": "Identité visuelle, branding et design d’expériences.",
+        "canonicalSlug": "design-branding"
+      },
+      "createdAt": "2026-04-04T10:35:00.014Z",
+      "updatedAt": "2026-04-04T10:35:00.014Z"
+    },
+    {
+      "id": "web-development",
+      "title": "Développement Web & Mobile",
+      "slug": "web-development",
+      "description": "Applications web modernes, rapides et sécurisées, adaptées à vos besoins métiers.",
+      "shortDescription": "Sites, apps et plateformes métiers.",
+      "color": "from-[#34c759] to-[#2da84a]",
+      "icon": "code",
+      "features": [
+        "Sites Web",
+        "Applications Mobile",
+        "E-commerce",
+        "Web Apps"
+      ],
+      "status": "published",
+      "featured": true,
+      "routeSlug": "web-development",
+      "processSteps": [],
+      "seo": {
+        "title": "Développement Web & Mobile",
+        "description": "Sites, apps et plateformes métiers.",
+        "canonicalSlug": "web-development"
+      },
+      "createdAt": "2026-04-04T10:35:00.015Z",
+      "updatedAt": "2026-04-04T10:35:00.015Z"
+    },
+    {
+      "id": "digital-communication",
+      "title": "Communication Digitale",
+      "slug": "digital-communication",
+      "description": "Stratégie de contenu, visibilité en ligne, branding et storytelling digital.",
+      "shortDescription": "Acquisition, contenu et notoriété digitale.",
+      "color": "from-[#ffc247] to-[#ff9f47]",
+      "icon": "megaphone",
+      "features": [
+        "Stratégie Social Media",
+        "Content Marketing",
+        "SEO/SEA",
+        "Email Marketing"
+      ],
+      "status": "published",
+      "featured": false,
+      "routeSlug": "digital-communication",
+      "processSteps": [],
+      "seo": {
+        "title": "Communication Digitale",
+        "description": "Acquisition, contenu et notoriété digitale.",
+        "canonicalSlug": "digital-communication"
+      },
+      "createdAt": "2026-04-04T10:35:00.015Z",
+      "updatedAt": "2026-04-04T10:35:00.015Z"
+    },
+    {
+      "id": "video-production",
+      "title": "Production Vidéo",
+      "slug": "video-production",
+      "description": "Création de vidéos professionnelles pour vos campagnes marketing et événements.",
+      "shortDescription": "Formats vidéo impactants et motion.",
+      "color": "from-[#ff6b6b] to-[#ee5a6f]",
+      "icon": "video",
+      "features": [
+        "Vidéos Publicitaires",
+        "Motion Graphics",
+        "Montage Vidéo",
+        "Live Streaming"
+      ],
+      "status": "published",
+      "featured": false,
+      "routeSlug": "video-production",
+      "processSteps": [],
+      "seo": {
+        "title": "Production Vidéo",
+        "description": "Formats vidéo impactants et motion.",
+        "canonicalSlug": "video-production"
+      },
+      "createdAt": "2026-04-04T10:35:00.015Z",
+      "updatedAt": "2026-04-04T10:35:00.015Z"
+    },
+    {
+      "id": "3d-creation",
+      "title": "Création 3D",
+      "slug": "3d-creation",
+      "description": "Modélisation 3D, animations et expériences immersives pour vos projets.",
+      "shortDescription": "3D, AR/VR et visualisation immersive.",
+      "color": "from-[#a855f7] to-[#9333ea]",
+      "icon": "box",
+      "features": [
+        "Modélisation 3D",
+        "Animation 3D",
+        "Rendering",
+        "VR/AR"
+      ],
+      "status": "published",
+      "featured": false,
+      "routeSlug": "3d-creation",
+      "processSteps": [],
+      "seo": {
+        "title": "Création 3D",
+        "description": "3D, AR/VR et visualisation immersive.",
+        "canonicalSlug": "3d-creation"
+      },
+      "createdAt": "2026-04-04T10:35:00.015Z",
+      "updatedAt": "2026-04-04T10:35:00.015Z"
+    }
+  ],
+  "pageContent": null,
+  "settings": null,
+  "settingsHistory": [],
+  "migrationHistory": [
+    {
+      "migrationId": "projects-legacy-import-1775668294778",
+      "migratedAt": "2026-04-08T17:11:34.778Z",
+      "importedCount": 8,
+      "skippedExistingCount": 0,
+      "source": "site-legacy-projects",
+      "strategy": "slug_then_id"
+    },
+    {
+      "fromVersion": 2,
+      "toVersion": 3,
+      "migratedAt": "2026-04-04T10:49:59.732Z",
+      "note": "Initialized settings history baseline for auditability and rollback."
+    }
+  ]
+}

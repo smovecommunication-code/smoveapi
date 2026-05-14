@@ -1,0 +1,20 @@
+{
+  "name": "smove-api",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "node server/index.js",
+    "start": "node server/index.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "connect-mongo": "^5.1.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "google-auth-library": "^9.15.1",
+    "helmet": "^8.1.0",
+    "mongoose": "^8.15.1"
+  }
+}
