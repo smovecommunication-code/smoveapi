@@ -56,4 +56,30 @@ function getMongoConnectionState() {
   return { ...connectionState };
 }
 
-module.exports = { connectMongo, disconnectMongo, getMongoose, getMongoConnectionState };
+async function migrateLegacyUserProviderIndex() {
+  if (!isConnected || !mongooseLib) return;
+
+  const usersCollection = mongooseLib.connection.collection('users');
+  const indexes = await usersCollection.indexes();
+  const legacyIndex = indexes.find((index) => index.name === 'authProvider_1_providerId_1');
+
+  if (!legacyIndex) return;
+
+  const isTargetKey = JSON.stringify(legacyIndex.key) === JSON.stringify({ authProvider: 1, providerId: 1 });
+  const hasStringProviderPartialFilter =
+    legacyIndex.partialFilterExpression
+    && JSON.stringify(legacyIndex.partialFilterExpression) === JSON.stringify({ providerId: { $exists: true, $type: 'string' } });
+
+  if (isTargetKey && legacyIndex.unique === true && !hasStringProviderPartialFilter) {
+    await usersCollection.dropIndex('authProvider_1_providerId_1');
+    logInfo('mongo_index_migration_dropped_legacy_auth_provider_provider_id_index');
+  }
+}
+
+module.exports = {
+  connectMongo,
+  disconnectMongo,
+  getMongoose,
+  getMongoConnectionState,
+  migrateLegacyUserProviderIndex,
+};

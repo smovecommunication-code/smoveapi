@@ -1,5 +1,5 @@
 const { createApp } = require('./app');
-const { connectMongo, getMongoose, getMongoConnectionState } = require('./config/mongo');
+const { connectMongo, getMongoose, getMongoConnectionState, migrateLegacyUserProviderIndex } = require('./config/mongo');
 const {
   API_PORT,
   validateCriticalEnv,
@@ -25,6 +25,7 @@ const { MongoAuthRepository } = require('./repositories/authRepository.mongo');
 const { MemoryAuthRepository } = require('./repositories/authRepository.memory');
 const { MongoContentRepository } = require('./repositories/contentRepository.mongo');
 const { MongoContactSubmissionRepository } = require('./repositories/contactSubmissionRepository.mongo');
+const { createUserModel } = require('./models/User');
 const { AuthService } = require('./services/authService');
 const { ContentService } = require('./services/contentService');
 const { ContactService } = require('./services/contactService');
@@ -39,6 +40,22 @@ async function bootstrap() {
   const mongoose = getMongoose();
   const mongoState = getMongoConnectionState();
   const usingMongo = Boolean(mongoose);
+
+  if (usingMongo) {
+    await migrateLegacyUserProviderIndex();
+
+    const UserModel = createUserModel(mongoose);
+    await UserModel.collection.createIndex(
+      { authProvider: 1, providerId: 1 },
+      {
+        name: 'authProvider_1_providerId_1',
+        unique: true,
+        partialFilterExpression: {
+          providerId: { $exists: true, $type: 'string' },
+        },
+      },
+    );
+  }
 
   if (!usingMongo && (isProduction || AUTH_STORAGE_MODE === 'mongo')) {
     throw new Error(`[auth] MongoDB auth repository unavailable (reason=${mongoState.reason}).`);

@@ -207,7 +207,16 @@ function createUserModel(mongoose) {
     },
   );
 
-  schema.index({ authProvider: 1, providerId: 1 }, { unique: true, sparse: true });
+  schema.index(
+    { authProvider: 1, providerId: 1 },
+    {
+      name: 'authProvider_1_providerId_1',
+      unique: true,
+      partialFilterExpression: {
+        providerId: { $exists: true, $type: 'string' },
+      },
+    },
+  );
 
   schema.pre('validate', function normalizeBeforeValidate(next) {
     if (this.email) {
