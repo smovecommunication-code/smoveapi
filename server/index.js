@@ -43,18 +43,7 @@ async function bootstrap() {
 
   if (usingMongo) {
     await migrateLegacyUserProviderIndex();
-
-    const UserModel = createUserModel(mongoose);
-    await UserModel.collection.createIndex(
-      { authProvider: 1, providerId: 1 },
-      {
-        name: 'authProvider_1_providerId_1',
-        unique: true,
-        partialFilterExpression: {
-          providerId: { $exists: true, $type: 'string' },
-        },
-      },
-    );
+    createUserModel(mongoose);
   }
 
   if (!usingMongo && (isProduction || AUTH_STORAGE_MODE === 'mongo')) {
