@@ -84,4 +84,38 @@ describe('session cors options', () => {
       cmsOrigin: 'https://smoovecms.vercel.app',
     });
   });
+
+  it('blocks cms preview origins unless explicit opt-in is enabled', async () => {
+    const blocked = await withEnv(
+      {
+        NODE_ENV: 'production',
+        FRONTEND_ORIGINS: 'https://smove-three.vercel.app,https://smoovecms.vercel.app',
+        ALLOW_CMS_VERCEL_PREVIEW_ORIGINS: 'false',
+      },
+      async ({ createCorsOptions }) => {
+        const options = createCorsOptions();
+        return new Promise((resolve) => {
+          options.origin('https://smoovecms-feature-123.vercel.app', (error) => resolve(Boolean(error)));
+        });
+      },
+    );
+
+    const allowed = await withEnv(
+      {
+        NODE_ENV: 'production',
+        FRONTEND_ORIGINS: 'https://smove-three.vercel.app,https://smoovecms.vercel.app',
+        ALLOW_CMS_VERCEL_PREVIEW_ORIGINS: 'true',
+      },
+      async ({ createCorsOptions }) => {
+        const options = createCorsOptions();
+        return new Promise((resolve, reject) => {
+          options.origin('https://smoovecms-feature-123.vercel.app', (error, value) => (error ? reject(error) : resolve(value)));
+        });
+      },
+    );
+
+    expect(blocked).toBe(true);
+    expect(allowed).toBe('https://smoovecms-feature-123.vercel.app');
+  });
+
 });

@@ -1,5 +1,7 @@
 const session = require('express-session');
 const { SESSION_SECRET, isProduction, SESSION_TTL_SECONDS, MONGO_URI, SESSION_STORE_MODE, FRONTEND_ORIGINS } = require('./env');
+
+const ALLOW_CMS_VERCEL_PREVIEW_ORIGINS = process.env.ALLOW_CMS_VERCEL_PREVIEW_ORIGINS === 'true';
 const { getMongoose } = require('./mongo');
 const { logInfo, logWarn } = require('../utils/logger');
 
@@ -87,16 +89,12 @@ function normalizeOrigin(origin) {
 }
 
 function isAllowedCmsPreviewOrigin(origin) {
-  if (!origin) return false;
+  if (!ALLOW_CMS_VERCEL_PREVIEW_ORIGINS || !origin) return false;
 
   try {
     const parsed = new URL(origin);
     if (parsed.protocol !== 'https:') return false;
-    if (parsed.hostname === 'smoovecms.vercel.app') return true;
-    if (parsed.hostname.endsWith('.vercel.app') && parsed.hostname.startsWith('smoovecms-')) {
-      return true;
-    }
-    return false;
+    return parsed.hostname.endsWith('.vercel.app') && parsed.hostname.startsWith('smoovecms-');
   } catch {
     return false;
   }
