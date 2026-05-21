@@ -83,7 +83,29 @@ describe('content public routes hardening', () => {
     expect(resBlog.headers['Cache-Control']).toBe('no-store');
   });
 
-  it('serves public page-content and media without authentication guards', () => {
+  
+  it('includes published blog posts and projects even when media fields are empty', () => {
+    const router = createContentRoutes({
+      contentService: createContentService({
+        listProjects: () => [{ id: 'p2', title: 'Project without media', slug: 'project-without-media', status: 'published' }],
+        listBlogPosts: () => [{ id: 'b2', title: 'Blog without media', slug: 'blog-without-media', status: 'published' }],
+      }),
+    });
+
+    const projectsHandler = router.stack.find((layer) => layer.route?.path === '/public/projects')?.route.stack[0].handle;
+    const blogHandler = router.stack.find((layer) => layer.route?.path === '/public/blog')?.route.stack[0].handle;
+
+    const projectsRes = createRes();
+    const blogRes = createRes();
+
+    projectsHandler({}, projectsRes);
+    blogHandler({}, blogRes);
+
+    expect(projectsRes.body?.data?.projects).toHaveLength(1);
+    expect(blogRes.body?.data?.posts).toHaveLength(1);
+  });
+
+it('serves public page-content and media without authentication guards', () => {
     const router = createContentRoutes({
       contentService: createContentService({
         getPageContent: () => ({ home: { heroBadge: 'Public hero' } }),

@@ -75,31 +75,12 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
-  const hasRenderableMedia = (...values) =>
-    values.some((value) => typeof value === 'string' && value.trim().length > 0);
   const isPublishedOrLegacy = (status) => status === undefined || status === null || status === '' || status === 'published';
-  const isPublicBlogEligible = (post) =>
-    isPublishedOrLegacy(post.status) &&
-    post.title?.trim() &&
-    post.slug?.trim() &&
-    hasRenderableMedia(
-      post.mediaRoles?.cardImage,
-      post.mediaRoles?.coverImage,
-      post.mediaRoles?.featuredImage,
-      post.featuredImage,
-    );
+  const isPublicBlogEligible = (post) => isPublishedOrLegacy(post.status) && post.title?.trim() && post.slug?.trim();
   const isPublicProjectEligible = (project) =>
     isPublishedOrLegacy(project.status) &&
     project.title?.trim() &&
-    project.slug?.trim() &&
-    hasRenderableMedia(
-      project.mediaRoles?.cardImage,
-      project.mediaRoles?.heroImage,
-      project.mediaRoles?.coverImage,
-      project.mediaRoles?.featuredImage,
-      project.featuredImage,
-      project.mainImage,
-    );
+    project.slug?.trim();
 
   router.get('/public/projects', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
