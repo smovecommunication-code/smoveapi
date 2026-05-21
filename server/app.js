@@ -215,6 +215,14 @@ function createApp(deps = {}) {
   app.use(`/api${MEDIA_PUBLIC_BASE_PATH}`, express.static(path.resolve(MEDIA_UPLOAD_DIR)));
   app.use(exposeCsrfToken);
 
+  app.get('/', (_req, res) => {
+    res.status(200).json({ ok: true, service: 'smove-api', version: '1.0.0' });
+  });
+
+  app.head('/', (_req, res) => {
+    res.status(200).end();
+  });
+
   app.get('/api/v1/health', (_req, res) => {
     res.status(200).json({ ok: true, service: 'smove-api', uptimeSec: Number(process.uptime().toFixed(2)) });
   });

@@ -125,7 +125,7 @@ function createCorsOptions() {
       return callback(new Error(`CORS origin not allowed: ${origin}`));
     },
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'Cache-Control', 'Pragma', 'Expires'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     optionsSuccessStatus: 204,
   };

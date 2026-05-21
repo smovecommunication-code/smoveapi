@@ -12,7 +12,7 @@ function createNewsletterSubscriberModel(mongoose) {
         trim: true,
         lowercase: true,
         maxlength: 160,
-        index: true,
+        unique: true,
       },
       status: {
         type: String,
@@ -48,7 +48,6 @@ function createNewsletterSubscriberModel(mongoose) {
     { timestamps: true, collection: 'newsletter_subscribers' },
   );
 
-  schema.index({ email: 1 }, { unique: true });
 
   return mongoose.model(modelName, schema);
 }
