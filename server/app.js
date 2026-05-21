@@ -78,6 +78,7 @@ function createRequestId() {
 
 function createApp(deps = {}) {
   const app = express();
+  app.set('trust proxy', 1);
 
   const mongoose = getMongoose();
   const userRepository = deps.userRepository ?? (mongoose ? new MongoAuthRepository({ mongoose }) : new MemoryAuthRepository());
