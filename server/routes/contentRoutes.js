@@ -127,7 +127,7 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
   });
   router.get('/public/page-content', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    return sendSuccess(res, 200, { pageContent: contentService.getPageContent() });
+    return sendSuccess(res, 200, { pageContent: contentService.getPublicPageContent() });
   });
   router.get('/public/media', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');

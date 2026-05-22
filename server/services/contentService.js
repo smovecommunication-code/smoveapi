@@ -1135,7 +1135,39 @@ class ContentService {
   }
 
   getPublicSettings() {
-    return this.getSettings().siteSettings;
+    const settings = this.getSettings();
+    const mediaById = new Map(this.listMediaFiles({ includeArchived: true }).map((entry) => [entry.id, entry]));
+    const resolve = (value) => this.resolvePublicMediaValue(value, mediaById);
+    return {
+      ...settings.siteSettings,
+      brandMedia: {
+        ...settings.siteSettings.brandMedia,
+        logo: resolve(settings.siteSettings.brandMedia.logo),
+        logoDark: resolve(settings.siteSettings.brandMedia.logoDark),
+        favicon: resolve(settings.siteSettings.brandMedia.favicon),
+        defaultSocialImage: resolve(settings.siteSettings.brandMedia.defaultSocialImage),
+      },
+    };
+  }
+
+  getPublicPageContent() {
+    const page = this.getPageContent();
+    const mediaById = new Map(this.listMediaFiles({ includeArchived: true }).map((entry) => [entry.id, entry]));
+    const resolve = (value) => this.resolvePublicMediaValue(value, mediaById);
+    return {
+      home: {
+        ...page.home,
+        aboutImage: resolve(page.home.aboutImage),
+        heroBackgroundItems: (Array.isArray(page.home.heroBackgroundItems) ? page.home.heroBackgroundItems : []).map((item) => ({
+          ...item,
+          media: resolve(item.media),
+          desktopMedia: resolve(item.desktopMedia),
+          tabletMedia: resolve(item.tabletMedia),
+          mobileMedia: resolve(item.mobileMedia),
+          videoMedia: resolve(item.videoMedia),
+        })),
+      },
+    };
   }
 
   getBlogTaxonomy() {
@@ -2091,6 +2123,17 @@ class ContentService {
       createdAt: file?.createdAt || file?.uploadedDate || nowIso,
       updatedAt: nowIso,
     };
+  }
+
+  resolvePublicMediaValue(value, mediaById) {
+    const trimmed = requiredTrimmed(value);
+    if (!trimmed) return '';
+    if (this.isMediaReference(trimmed)) {
+      const mediaId = this.mediaIdFromReference(trimmed);
+      const media = mediaId ? mediaById.get(mediaId) : null;
+      return media?.url || '';
+    }
+    return trimmed;
   }
 
   normalizeMediaVariants(rawVariants, file = {}) {
