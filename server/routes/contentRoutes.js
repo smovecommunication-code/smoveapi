@@ -57,6 +57,55 @@ function parseUploadPayload(payload) {
   };
 }
 
+
+function decodeMultipartValue(valueBuffer, filename) {
+  const isText = !filename;
+  if (isText) return valueBuffer.toString('utf8').trim();
+  return valueBuffer;
+}
+
+function parseMultipartFormData(req) {
+  const contentType = req.headers['content-type'] || '';
+  const match = contentType.match(/boundary=([^;]+)/i);
+  if (!match) {
+    return { ok: false, error: { code: 'MEDIA_INVALID_PAYLOAD', message: 'Missing multipart boundary.' } };
+  }
+  const boundary = `--${match[1].replace(/^"|"$/g, '')}`;
+  const raw = req.body;
+  if (!Buffer.isBuffer(raw) || !raw.length) {
+    return { ok: false, error: { code: 'MEDIA_INVALID_PAYLOAD', message: 'Multipart payload is empty.' } };
+  }
+  const parts = raw.toString('binary').split(boundary).slice(1, -1);
+  const fields = {};
+  let file = null;
+  for (const part of parts) {
+    const segment = part.replace(/^\r\n/, '').replace(/\r\n$/, '');
+    if (!segment) continue;
+    const idx = segment.indexOf('\r\n\r\n');
+    if (idx === -1) continue;
+    const headerBlock = segment.slice(0, idx);
+    const bodyBinary = segment.slice(idx + 4);
+    const headers = headerBlock.split('\r\n');
+    const disp = headers.find((h) => /^content-disposition:/i.test(h));
+    if (!disp) continue;
+    const name = (disp.match(/name="([^"]+)"/) || [])[1];
+    const filename = (disp.match(/filename="([^"]*)"/) || [])[1];
+    if (!name) continue;
+    const mimeLine = headers.find((h) => /^content-type:/i.test(h));
+    const mimeType = mimeLine ? mimeLine.split(':')[1].trim() : 'application/octet-stream';
+    const bodyBuffer = Buffer.from(bodyBinary, 'binary');
+    if (filename) {
+      file = { fieldName: name, filename, mimeType, buffer: bodyBuffer };
+    } else {
+      fields[name] = decodeMultipartValue(bodyBuffer, filename);
+    }
+  }
+  if (!file) {
+    return { ok: false, error: { code: 'MEDIA_INVALID_PAYLOAD', message: 'Multipart file field is required.' } };
+  }
+  return { ok: true, parsed: { fields, file } };
+}
+
 function createContentRoutes({ contentService, auditService, mediaStorage }) {
   const router = express.Router();
   const actorFromRequest = (req) => ({
@@ -410,14 +459,37 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
   router.get('/media/:id/impact', requirePermission(Permissions.CONTENT_READ), (req, res) =>
     sendSuccess(res, 200, { impact: contentService.getMediaUsageImpact(req.params.id) }));
 
-  router.post('/media/upload', requirePermission(Permissions.CONTENT_WRITE), (req, res) => {
-    const parsed = parseUploadPayload(req.body || {});
-    if (!parsed.ok) {
-      auditService?.record(toAuditContext(req, 'cms_media_upload', 'failure', { entityType: 'media_asset', metadata: { code: parsed.error.code } }));
-      return sendError(res, 400, parsed.error.code, parsed.error.message);
+  router.post('/media/upload', requirePermission(Permissions.CONTENT_WRITE), express.raw({ type: 'multipart/form-data', limit: '30mb' }), (req, res, next) => {
+    if ((req.headers['content-type'] || '').includes('multipart/form-data')) return next();
+    return express.json({ limit: '30mb' })(req, res, next);
+  }, (req, res) => {
+    let uploadInput;
+    if ((req.headers['content-type'] || '').includes('multipart/form-data')) {
+      const multipart = parseMultipartFormData(req);
+      if (!multipart.ok) {
+        auditService?.record(toAuditContext(req, 'cms_media_upload', 'failure', { entityType: 'media_asset', metadata: { code: multipart.error.code } }));
+        return sendError(res, 400, multipart.error.code, multipart.error.message);
+      }
+      const file = multipart.parsed.file;
+      uploadInput = {
+        filename: file.filename,
+        mimeType: file.mimeType,
+        encodedFile: file.buffer.toString('base64'),
+        title: `${multipart.parsed.fields.title || file.filename}`.trim(),
+        alt: `${multipart.parsed.fields.alt || file.filename}`.trim(),
+        caption: `${multipart.parsed.fields.caption || ''}`.trim(),
+        tags: `${multipart.parsed.fields.tags || ''}`.split(',').map((t)=>t.trim()).filter(Boolean),
+      };
+    } else {
+      const parsed = parseUploadPayload(req.body || {});
+      if (!parsed.ok) {
+        auditService?.record(toAuditContext(req, 'cms_media_upload', 'failure', { entityType: 'media_asset', metadata: { code: parsed.error.code } }));
+        return sendError(res, 400, parsed.error.code, parsed.error.message);
+      }
+      uploadInput = parsed.parsed;
     }
 
-    const stored = mediaStorage.saveBase64Upload(parsed.parsed);
+    const stored = mediaStorage.saveBase64Upload(uploadInput);
     if (!stored.ok) {
       logContentFailure(req, 'cms_media_upload_failed', stored.error.code);
       auditService?.record(toAuditContext(req, 'cms_media_upload', 'failure', { entityType: 'media_asset', metadata: { code: stored.error.code } }));
@@ -427,18 +499,18 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
     const now = new Date().toISOString();
     const mediaPayload = {
       id: stored.file.id,
-      name: parsed.parsed.filename,
-      title: parsed.parsed.title || parsed.parsed.filename,
-      label: parsed.parsed.title || parsed.parsed.filename,
+      name: uploadInput.filename,
+      title: uploadInput.title || uploadInput.filename,
+      label: uploadInput.title || uploadInput.filename,
       type: stored.file.mediaType,
       url: stored.file.publicUrl,
       thumbnailUrl: stored.file.publicUrl,
       size: stored.file.size,
       uploadedDate: now,
       uploadedBy: req.session?.userId ?? 'unknown',
-      alt: parsed.parsed.alt || parsed.parsed.filename,
-      caption: parsed.parsed.caption || parsed.parsed.alt || parsed.parsed.filename,
-      tags: parsed.parsed.tags,
+      alt: uploadInput.alt || uploadInput.filename,
+      caption: uploadInput.caption || uploadInput.alt || uploadInput.filename,
+      tags: uploadInput.tags,
       source: 'local-disk',
       metadata: {
         mimeType: stored.file.mimeType,
@@ -475,6 +547,15 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       return sendError(res, 400, result.error.code, result.error.message);
     }
     auditService?.record(toAuditContext(req, 'cms_media_save', 'success', { entityType: 'media_asset', entityId: result.mediaFile.id }));
+    return sendSuccess(res, 200, { mediaFile: result.mediaFile });
+  });
+
+  router.patch('/media/:id', requirePermission(Permissions.CONTENT_WRITE), (req, res) => {
+    const result = contentService.replaceMediaFile(req.params.id, req.body || {});
+    if (!result.ok) {
+      const statusCode = result.error.code === 'MEDIA_NOT_FOUND' ? 404 : 400;
+      return sendError(res, statusCode, result.error.code, result.error.message);
+    }
     return sendSuccess(res, 200, { mediaFile: result.mediaFile });
   });
 
