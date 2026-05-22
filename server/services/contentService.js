@@ -13,6 +13,7 @@ const {
   hasMinTrimmedLength,
   normalizeStringArray,
 } = require('../utils/contentContracts');
+const { API_ORIGIN } = require('../config/env');
 const crypto = require('crypto');
 
 const BLOG_STATUSES = new Set(['draft', 'in_review', 'published', 'archived']);
@@ -26,6 +27,7 @@ const MANAGED_BLOG_CATEGORIES = ['Développement Web', 'Communication', 'Brandin
 const MANAGED_BLOG_TAGS = ['React', 'Web Design', 'Performance', 'Innovation', 'Vidéo', 'Branding', 'Corporate', 'BTP', 'Logo Design', 'Identité Visuelle', 'Food', 'SEO', 'Social Media', 'CMS'];
 const DEFAULT_ORGANIZATION_ID = 'org_default';
 const MEDIA_VARIANT_KEYS = ['thumbnail', 'card', 'hero', 'social', 'original'];
+const HTTP_SCHEME_PATTERN = /^[a-zA-Z][a-zA-Z\d+.-]*:/;
 
 const defaultHomePageContent = {
   heroBadge: 'Agence de communication',
@@ -2104,6 +2106,29 @@ class ContentService {
     const normalizedAlt = (file?.alt || '').trim() || normalizedName;
     const nowIso = new Date().toISOString();
 
+    const absolutizeMediaUrl = (value) => {
+      const normalized = requiredTrimmed(value);
+      if (!normalized) return '';
+      if (HTTP_SCHEME_PATTERN.test(normalized) || normalized.startsWith('//') || normalized.startsWith('data:')) {
+        return normalized;
+      }
+      if (normalized.startsWith('/')) {
+        return `${API_ORIGIN}${normalized}`;
+      }
+      if (normalized.startsWith('uploads/') || normalized.startsWith('media/')) {
+        return `${API_ORIGIN}/${normalized}`;
+      }
+      return normalized;
+    };
+
+    const normalizedUrl = absolutizeMediaUrl(file?.url);
+    const normalizedThumbnailUrl = absolutizeMediaUrl((file?.thumbnailUrl || '').trim() || normalizedUrl);
+    const normalizedVariants = this.normalizeMediaVariants(file?.variants, {
+      ...file,
+      url: normalizedUrl,
+      thumbnailUrl: normalizedThumbnailUrl,
+    });
+
     return {
       ...file,
       name: normalizedName,
@@ -2118,8 +2143,15 @@ class ContentService {
         license: typeof file?.metadata?.license === 'string' ? file.metadata.license.trim() : '',
         focalPoint: typeof file?.metadata?.focalPoint === 'string' ? file.metadata.focalPoint.trim() : '',
       },
-      variants: this.normalizeMediaVariants(file?.variants, file),
-      thumbnailUrl: (file?.thumbnailUrl || '').trim() || file?.url,
+      url: normalizedUrl,
+      variants: normalizedVariants,
+      thumbnailUrl: normalizedThumbnailUrl,
+      publicPath: (() => {
+        const candidate = requiredTrimmed(file?.publicPath);
+        if (candidate) return candidate;
+        if (normalizedUrl.startsWith(API_ORIGIN)) return normalizedUrl.slice(API_ORIGIN.length);
+        return candidate;
+      })(),
       createdAt: file?.createdAt || file?.uploadedDate || nowIso,
       updatedAt: nowIso,
     };
