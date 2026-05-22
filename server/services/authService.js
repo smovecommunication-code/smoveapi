@@ -5,6 +5,7 @@ const {
   OAUTH_DEFAULT_ROLE,
   PUBLIC_REGISTRATION_ENABLED,
   ENABLE_EMAIL_PASSWORD_AUTH,
+  DEFAULT_PUBLIC_ROLE,
   isProduction,
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
@@ -462,7 +463,7 @@ class AuthService {
         email,
         name,
         passwordHash,
-        role: 'client',
+        role: DEFAULT_PUBLIC_ROLE,
         status: 'client',
         accountStatus: 'active',
         authProvider: 'local',
@@ -615,7 +616,7 @@ class AuthService {
       if (actor?.role !== 'admin') {
         return { ok: false, status: 403, code: 'FORBIDDEN_ROLE_CHANGE', message: 'Only admins can change roles' };
       }
-      if (!['admin', 'editor', 'author', 'viewer', 'client'].includes(payload.role)) {
+      if (!['admin', 'editor', 'author', 'viewer', 'client', 'user'].includes(payload.role)) {
         return { ok: false, status: 400, code: 'VALIDATION_ERROR', message: 'Invalid role' };
       }
       if (String(actor?.id) === String(user.id) && payload.role !== user.role) {
