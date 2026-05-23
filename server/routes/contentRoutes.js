@@ -502,7 +502,7 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
   router.get('/media/:id/impact', requirePermission(Permissions.CONTENT_READ), (req, res) =>
     sendSuccess(res, 200, { impact: contentService.getMediaUsageImpact(req.params.id) }));
 
-  router.post('/media/upload', requirePermission(Permissions.CONTENT_WRITE), express.raw({ type: 'multipart/form-data', limit: '30mb' }), (req, res, next) => {
+  router.post('/media/upload', requirePermission(Permissions.CONTENT_WRITE), express.raw({ type: (req) => (req.headers['content-type'] || '').includes('multipart/form-data'), limit: '30mb' }), (req, res, next) => {
     if ((req.headers['content-type'] || '').includes('multipart/form-data')) return next();
     return express.json({ limit: '30mb' })(req, res, next);
   }, (req, res) => {
