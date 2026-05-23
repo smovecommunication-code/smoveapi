@@ -124,6 +124,9 @@ function parseMultipartFormData(req) {
   if (!file) {
     return { ok: false, error: { code: 'MEDIA_INVALID_PAYLOAD', message: 'Multipart file field is required.' } };
   }
+  if (file.fieldName !== 'file') {
+    return { ok: false, error: { code: 'MEDIA_INVALID_PAYLOAD', message: 'Multipart file field name must be "file".' } };
+  }
   return { ok: true, parsed: { fields, file } };
 }
 
@@ -518,7 +521,7 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
         filename: file.filename,
         mimeType: file.mimeType,
         encodedFile: file.buffer.toString('base64'),
-        title: `${multipart.parsed.fields.title || file.filename}`.trim(),
+        title: `${multipart.parsed.fields.label || multipart.parsed.fields.title || file.filename}`.trim(),
         alt: `${multipart.parsed.fields.alt || file.filename}`.trim(),
         caption: `${multipart.parsed.fields.caption || ''}`.trim(),
         tags: `${multipart.parsed.fields.tags || ''}`.split(',').map((t)=>t.trim()).filter(Boolean),
@@ -579,7 +582,7 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       entityId: stored.file.id,
       metadata: { mimeType: stored.file.mimeType, size: stored.file.size },
     }));
-    return sendSuccess(res, 200, { mediaFile: toCanonicalMedia(saved.mediaFile) });
+    return sendSuccess(res, 201, { media: toCanonicalMedia(saved.mediaFile) });
   });
 
   router.post('/media', requirePermission(Permissions.CONTENT_WRITE), (req, res) => {
