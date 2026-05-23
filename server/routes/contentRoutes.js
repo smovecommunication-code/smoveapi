@@ -4,6 +4,27 @@ const { Permissions } = require('../security/rbac');
 const { sendSuccess, sendError } = require('../utils/apiResponse');
 const { logInfo, logWarn } = require('../utils/logger');
 
+const { normalizeMediaReference } = require('../utils/mediaResolver');
+
+function normalizeMediaPayload(payload, mediaFiles = [], apiOrigin = '') {
+  if (!payload || typeof payload !== 'object') return payload;
+  const normalizeValue = (value) => normalizeMediaReference(value, { apiOrigin, allowIdOnly: true }) || (typeof value === 'string' ? value.trim() : value);
+  const walk = (node, key = '') => {
+    if (Array.isArray(node)) return node.map((entry) => walk(entry, key));
+    if (!node || typeof node !== 'object') return node;
+    const out = { ...node };
+    Object.keys(out).forEach((k) => {
+      const v = out[k];
+      const lower = k.toLowerCase();
+      const looksMediaField = ['media','image','logo','favicon','icon','thumbnail','cover','hero','background','visual'].some((token)=>lower.includes(token));
+      if (typeof v === 'string' && looksMediaField) out[k] = normalizeValue(v);
+      else out[k] = walk(v, k);
+    });
+    return out;
+  };
+  return walk(payload);
+}
+
 function logContentFailure(req, event, code, details = {}) {
   logWarn(event, {
     requestId: req.requestId,
@@ -133,18 +154,18 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
 
   router.get('/public/projects', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    return sendSuccess(res, 200, { projects: contentService.listProjects().filter(isPublicProjectEligible) });
+    return sendSuccess(res, 200, { projects: normalizeMediaPayload(contentService.listProjects().filter(isPublicProjectEligible), contentService.listMediaFiles()) });
   });
   router.get('/public/services', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    return sendSuccess(res, 200, { services: contentService.listServices().filter((s) => isPublishedOrLegacy(s.status)) });
+    return sendSuccess(res, 200, { services: normalizeMediaPayload(contentService.listServices().filter((s) => isPublishedOrLegacy(s.status)), contentService.listMediaFiles()) });
   });
   router.get('/public/blog', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     return sendSuccess(res, 200, {
-      posts: contentService
+      posts: normalizeMediaPayload(contentService
         .listBlogPosts()
-        .filter(isPublicBlogEligible),
+        .filter(isPublicBlogEligible), contentService.listMediaFiles()),
     });
   });
   router.get('/public/blog/taxonomy', (_req, res) => {
@@ -168,19 +189,19 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
     }
 
     res.setHeader('Cache-Control', 'no-store');
-    return sendSuccess(res, 200, { post });
+    return sendSuccess(res, 200, { post: normalizeMediaPayload(post, contentService.listMediaFiles()) });
   });
   router.get('/public/settings', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    return sendSuccess(res, 200, { settings: contentService.getPublicSettings() });
+    return sendSuccess(res, 200, { settings: normalizeMediaPayload(contentService.getPublicSettings(), contentService.listMediaFiles()) });
   });
   router.get('/public/page-content', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    return sendSuccess(res, 200, { pageContent: contentService.getPublicPageContent() });
+    return sendSuccess(res, 200, { pageContent: normalizeMediaPayload(contentService.getPublicPageContent(), contentService.listMediaFiles()) });
   });
   router.get('/public/media', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    return sendSuccess(res, 200, { mediaFiles: contentService.listMediaFiles() });
+    return sendSuccess(res, 200, { mediaFiles: normalizeMediaPayload(contentService.listMediaFiles(), contentService.listMediaFiles()) });
   });
   router.get('/public/diagnostics', (_req, res) =>
     sendSuccess(res, 200, {
