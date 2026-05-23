@@ -1739,7 +1739,7 @@ class ContentService {
 
   isValidMediaLink(value) {
     return isValidMediaFieldValue(value, {
-      allowInlineText: true,
+      allowInlineText: false,
       hasMediaById: (mediaId) => this.listMediaFiles().some((entry) => entry.id === mediaId),
     });
   }
