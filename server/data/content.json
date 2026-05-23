@@ -111,6 +111,36 @@
         "cardImage": "logo design creative professional",
         "socialImage": "logo design creative professional"
       }
+    },
+    {
+      "id": "post-1773600374309",
+      "title": "CREATION LOGO",
+      "slug": "logo",
+      "excerpt": "KNBJK",
+      "content": "BJKBK",
+      "author": "BBBBB",
+      "authorRole": "CMS Editor",
+      "category": "BBBBBBJJJKKK",
+      "tags": [],
+      "publishedDate": "2026-03-15T18:46:14.309Z",
+      "readTime": "5 min",
+      "featuredImage": "blog article image",
+      "images": [],
+      "status": "published",
+      "seo": {
+        "title": "B     KKKK",
+        "description": "BJKKB",
+        "canonicalSlug": "logo",
+        "socialImage": "blog article image",
+        "noIndex": false,
+        "canonicalUrl": ""
+      },
+      "mediaRoles": {
+        "featuredImage": "blog article image",
+        "coverImage": "blog article image",
+        "cardImage": "blog article image",
+        "socialImage": "blog article image"
+      }
     }
   ],
   "projects": [
@@ -565,6 +595,296 @@
       "featured": false,
       "createdAt": "2026-04-08T17:11:34.778Z",
       "updatedAt": "2026-04-08T17:11:34.778Z"
+    },
+    {
+      "id": "project-1774211722807",
+      "title": "hgggg",
+      "slug": "klklhbh",
+      "client": "ygfff",
+      "category": "jjjjjjjjjj",
+      "year": "2026",
+      "status": "published",
+      "featured": false,
+      "description": "Description à compléter.",
+      "challenge": "Challenge à compléter.",
+      "solution": "Solution à compléter.",
+      "results": [],
+      "tags": [],
+      "mainImage": "media:media_1773656385615_e0a05757",
+      "featuredImage": "media:media_1773656385615_e0a05757",
+      "mediaRoles": {
+        "cardImage": "media:media_1773656385615_e0a05757",
+        "heroImage": "media:media_1773656385615_e0a05757",
+        "coverImage": "media:media_1773656385615_e0a05757",
+        "socialImage": "media:media_1773656385615_e0a05757",
+        "galleryImages": [
+          "media:media_1773656385615_e0a05757"
+        ]
+      },
+      "seo": {
+        "title": "hgggg",
+        "description": "Description à compléter.",
+        "canonicalSlug": "klklhbh",
+        "socialImage": "media:media_1773656385615_e0a05757"
+      },
+      "imageAlt": "logokara (1).png",
+      "images": [
+        "media:media_1773656385615_e0a05757"
+      ],
+      "createdAt": "2026-03-23T19:40:38.379Z",
+      "updatedAt": "2026-03-23T19:40:38.379Z"
+    },
+    {
+      "id": "smove-platform",
+      "title": "Plateforme SMOVE Digital",
+      "client": "SMOVE Communication",
+      "category": "Développement Web",
+      "year": "2024",
+      "description": "Création d'une plateforme web moderne pour la gestion de projets digitaux et la communication client.",
+      "challenge": "Développer une solution complète permettant de gérer tous les aspects de la communication digitale en un seul endroit.",
+      "solution": "Architecture web progressive avec React, système de gestion de contenu intégré, dashboard analytique et interface client intuitive.",
+      "results": [
+        "Réduction de 60% du temps de gestion de projet",
+        "Augmentation de 45% de la satisfaction client",
+        "Interface utilisateur primée pour son design",
+        "100% responsive sur tous les appareils"
+      ],
+      "tags": [
+        "React",
+        "Node.js",
+        "MongoDB",
+        "UI/UX",
+        "Dashboard"
+      ],
+      "mainImage": "modern web platform dashboard interface",
+      "images": [
+        "web dashboard analytics colorful",
+        "project management interface modern",
+        "client portal design clean"
+      ],
+      "testimonial": {
+        "text": "SMOVE a transformé notre façon de travailler. La plateforme est intuitive, rapide et répond parfaitement à nos besoins.",
+        "author": "Jean-Marc Kouassi",
+        "position": "Directeur Général"
+      }
+    },
+    {
+      "id": "ecla-btp-branding",
+      "title": "Identité Visuelle ECLA BTP",
+      "client": "ECLA BTP",
+      "category": "Branding",
+      "year": "2024",
+      "description": "Refonte complète de l'identité visuelle d'une entreprise de construction leader en Côte d'Ivoire.",
+      "challenge": "Moderniser l'image de marque tout en conservant la crédibilité et l'héritage de l'entreprise.",
+      "solution": "Nouveau logo symbolisant la solidité et l'innovation, charte graphique professionnelle, supports de communication print et digital.",
+      "results": [
+        "Augmentation de 80% de la reconnaissance de marque",
+        "Nouveau positionnement premium sur le marché",
+        "Cohérence visuelle sur tous les supports",
+        "Impact immédiat sur les réseaux sociaux"
+      ],
+      "tags": [
+        "Logo Design",
+        "Branding",
+        "Print",
+        "Digital",
+        "Charte Graphique"
+      ],
+      "mainImage": "construction company branding modern",
+      "images": [
+        "logo design construction professional",
+        "brand identity mockup business cards",
+        "corporate branding materials"
+      ],
+      "testimonial": {
+        "text": "Notre nouvelle identité visuelle nous a donné une image beaucoup plus moderne et professionnelle. Les retours sont excellents!",
+        "author": "Marie Koné",
+        "position": "Directrice Marketing, ECLA BTP"
+      }
+    },
+    {
+      "id": "gobon-sarl-ecommerce",
+      "title": "Boutique en Ligne Gobon Sarl",
+      "client": "Gobon Sarl",
+      "category": "E-commerce",
+      "year": "2023",
+      "description": "Développement d'une boutique en ligne complète pour la vente de produits alimentaires avec système de livraison.",
+      "challenge": "Créer une expérience d'achat fluide adaptée au marché local avec paiement mobile intégré.",
+      "solution": "Plateforme e-commerce sur mesure avec paiement mobile money, système de gestion des stocks, tracking de livraison et interface administrateur.",
+      "results": [
+        "Lancement réussi avec 1000+ commandes le premier mois",
+        "Taux de conversion de 3.8% (supérieur à la moyenne)",
+        "Intégration parfaite des paiements mobiles",
+        "Système de livraison optimisé pour Abidjan"
+      ],
+      "tags": [
+        "E-commerce",
+        "Next.js",
+        "Payment Integration",
+        "Mobile",
+        "Logistics"
+      ],
+      "mainImage": "ecommerce website african products",
+      "images": [
+        "online store modern clean design",
+        "shopping cart checkout process",
+        "mobile ecommerce app interface"
+      ],
+      "testimonial": {
+        "text": "Grâce à SMOVE, nous avons pu digitaliser notre commerce en un temps record. Les ventes en ligne dépassent nos attentes!",
+        "author": "Ibrahim Traoré",
+        "position": "PDG, Gobon Sarl"
+      }
+    },
+    {
+      "id": "restaurant-afrik-taste",
+      "title": "Application Mobile Afrik Taste",
+      "client": "Afrik Taste Restaurant",
+      "category": "Application Mobile",
+      "year": "2023",
+      "description": "Application mobile de commande et livraison pour une chaîne de restaurants ivoiriens.",
+      "challenge": "Offrir une expérience de commande simple et rapide avec suivi en temps réel de la livraison.",
+      "solution": "Application native iOS et Android avec menu interactif, personnalisation des plats, paiement intégré et suivi GPS de livraison.",
+      "results": [
+        "50,000+ téléchargements en 3 mois",
+        "Note moyenne de 4.8/5 sur les stores",
+        "Augmentation de 120% des commandes",
+        "Fidélisation client améliorée de 65%"
+      ],
+      "tags": [
+        "React Native",
+        "Mobile App",
+        "GPS",
+        "Payment",
+        "Real-time"
+      ],
+      "mainImage": "restaurant mobile app food delivery",
+      "images": [
+        "food delivery app interface colorful",
+        "restaurant menu app design",
+        "order tracking map mobile"
+      ],
+      "testimonial": {
+        "text": "L'application a révolutionné notre business. Nos clients adorent la simplicité et la rapidité du service.",
+        "author": "Fatou Diallo",
+        "position": "Directrice, Afrik Taste"
+      }
+    },
+    {
+      "id": "ministry-campaign",
+      "title": "Campagne Digitale Ministère",
+      "client": "Ministère de la Jeunesse",
+      "category": "Communication Digitale",
+      "year": "2023",
+      "description": "Campagne de communication digitale pour promouvoir l'entrepreneuriat jeune en Côte d'Ivoire.",
+      "challenge": "Atteindre et engager les jeunes sur les réseaux sociaux avec un message impactant.",
+      "solution": "Stratégie de contenu multicanal, vidéos virales, motion design, community management et influenceurs.",
+      "results": [
+        "5 millions de vues sur les réseaux sociaux",
+        "200,000+ interactions (likes, partages, commentaires)",
+        "Augmentation de 300% des inscriptions au programme",
+        "Tendance #1 sur Twitter Côte d'Ivoire pendant 3 jours"
+      ],
+      "tags": [
+        "Social Media",
+        "Video",
+        "Motion Design",
+        "Strategy",
+        "Influencers"
+      ],
+      "mainImage": "social media campaign colorful youth",
+      "images": [
+        "social media graphics modern vibrant",
+        "video production studio creative",
+        "digital campaign analytics dashboard"
+      ]
+    },
+    {
+      "id": "bank-mobile-app",
+      "title": "Application Bancaire Mobile",
+      "client": "Banque Atlantique CI",
+      "category": "FinTech",
+      "year": "2024",
+      "description": "Application mobile bancaire nouvelle génération avec fonctionnalités avancées.",
+      "challenge": "Créer une expérience bancaire mobile sécurisée, rapide et intuitive pour tous les âges.",
+      "solution": "Architecture sécurisée, biométrie, virements instantanés, gestion de budget AI, notifications intelligentes.",
+      "results": [
+        "200,000+ utilisateurs actifs",
+        "Réduction de 70% des visites en agence",
+        "Transactions 5x plus rapides",
+        "Sécurité renforcée avec authentification biométrique"
+      ],
+      "tags": [
+        "FinTech",
+        "Mobile",
+        "Security",
+        "AI",
+        "Banking"
+      ],
+      "mainImage": "mobile banking app modern secure",
+      "images": [
+        "banking app interface clean professional",
+        "payment transfer mobile design",
+        "financial dashboard mobile analytics"
+      ]
+    },
+    {
+      "id": "fashion-brand-3d",
+      "title": "Expérience 3D Marque de Mode",
+      "client": "Ivoire Fashion House",
+      "category": "Création 3D",
+      "year": "2024",
+      "description": "Création d'une expérience 3D immersive pour le lancement d'une collection de mode.",
+      "challenge": "Se démarquer lors du lancement avec une expérience digitale innovante et mémorable.",
+      "solution": "Showroom virtuel 3D, essayage virtuel AR, vidéo 3D de défilé, configurateur de produits interactif.",
+      "results": [
+        "Expérience partagée 100,000+ fois",
+        "Temps d'engagement moyen de 8 minutes",
+        "Conversion augmentée de 150%",
+        "Couverture médiatique nationale et internationale"
+      ],
+      "tags": [
+        "3D Modeling",
+        "AR",
+        "Virtual Showroom",
+        "Interactive",
+        "Fashion"
+      ],
+      "mainImage": "3d fashion virtual showroom",
+      "images": [
+        "3d modeling fashion design",
+        "augmented reality clothing app",
+        "virtual reality shopping experience"
+      ]
+    },
+    {
+      "id": "education-platform",
+      "title": "Plateforme E-Learning",
+      "client": "Université Virtuelle CI",
+      "category": "EdTech",
+      "year": "2023",
+      "description": "Plateforme complète d'apprentissage en ligne avec cours interactifs et certifications.",
+      "challenge": "Rendre l'éducation accessible et engageante pour des milliers d'étudiants à distance.",
+      "solution": "LMS complet avec vidéos HD, quizz interactifs, forums, suivi de progression, certifications automatiques.",
+      "results": [
+        "15,000+ étudiants inscrits",
+        "500+ cours disponibles",
+        "Taux de complétion de 78%",
+        "Certification reconnue par l'État"
+      ],
+      "tags": [
+        "EdTech",
+        "LMS",
+        "Video Streaming",
+        "Gamification",
+        "Certificates"
+      ],
+      "mainImage": "online learning platform modern",
+      "images": [
+        "elearning dashboard student interface",
+        "video course player interactive",
+        "certification system online education"
+      ]
     }
   ],
   "mediaFiles": [
@@ -615,6 +935,174 @@
       },
       "createdAt": "2026-04-04T17:09:28.525Z",
       "updatedAt": "2026-04-04T17:09:28.525Z"
+    },
+    {
+      "id": "media_1773656385615_e0a05757",
+      "name": "logokara (1).png",
+      "title": "logokara (1).png",
+      "label": "logokara (1).png",
+      "type": "image",
+      "url": "/uploads/2026/03/logokara-1--media_1773656385615_e0a05757.png",
+      "thumbnailUrl": "/uploads/2026/03/logokara-1--media_1773656385615_e0a05757.png",
+      "size": 25292,
+      "uploadedDate": "2026-03-16T10:19:45.617Z",
+      "uploadedBy": "cbcdcaaa-1b76-4313-bfd5-3f05c47e6546",
+      "alt": "logokara (1).png",
+      "caption": "logokara (1).png",
+      "tags": [],
+      "source": "local-disk",
+      "metadata": {
+        "mimeType": "image/png",
+        "checksumSha256": "005ece6400ce6a2ea9b14906aabd9be1b27fe47096d6fdc5512f28a191273587",
+        "license": "",
+        "focalPoint": ""
+      },
+      "createdAt": "2026-03-16T10:19:45.617Z",
+      "updatedAt": "2026-03-23T19:40:22.759Z"
+    },
+    {
+      "id": "media_1773656505014_ff8851e2",
+      "name": "stabilisateur-binatone-dvs-1000-va.jpg",
+      "title": "stabilisateur-binatone-dvs-1000-va.jpg",
+      "label": "stabilisateur-binatone-dvs-1000-va.jpg",
+      "type": "image",
+      "url": "/uploads/2026/03/stabilisateur-binatone-dvs-1000-va-media_1773656505014_ff8851e2.jpg",
+      "thumbnailUrl": "/uploads/2026/03/stabilisateur-binatone-dvs-1000-va-media_1773656505014_ff8851e2.jpg",
+      "size": 51298,
+      "uploadedDate": "2026-03-16T10:21:45.015Z",
+      "uploadedBy": "cbcdcaaa-1b76-4313-bfd5-3f05c47e6546",
+      "alt": "stabilisateur-binatone-dvs-1000-va.jpg",
+      "caption": "stabilisateur-binatone-dvs-1000-va.jpg",
+      "tags": [],
+      "source": "local-disk",
+      "metadata": {
+        "mimeType": "image/jpeg",
+        "checksumSha256": "0cc4242444ec273facb6d96f65e952e1b0c74f94db9e2df9f612ada12037547a",
+        "license": "",
+        "focalPoint": ""
+      },
+      "createdAt": "2026-03-16T10:21:45.015Z",
+      "updatedAt": "2026-03-23T19:40:22.759Z"
+    },
+    {
+      "id": "media_1774217714064_4395e0db",
+      "name": "940px-Map-Africa-Regions_(fr).png",
+      "title": "940px-Map-Africa-Regions_(fr).png",
+      "label": "940px-Map-Africa-Regions_(fr).png",
+      "type": "image",
+      "url": "/uploads/2026/03/940px-map-africa-regions_-fr--media_1774217714064_4395e0db.png",
+      "thumbnailUrl": "/uploads/2026/03/940px-map-africa-regions_-fr--media_1774217714064_4395e0db.png",
+      "size": 510794,
+      "uploadedDate": "2026-03-22T22:15:14.069Z",
+      "uploadedBy": "a603e0d4-cef1-44dc-aea0-126e348839b2",
+      "alt": "940px-Map-Africa-Regions_(fr).png",
+      "caption": "940px-Map-Africa-Regions_(fr).png",
+      "tags": [],
+      "source": "local-disk",
+      "metadata": {
+        "mimeType": "image/png",
+        "checksumSha256": "45ff09f0fc2905cfd8b9111ddd6092a1b6a78beb30f3f8e9946ab26524937d0e",
+        "license": "",
+        "focalPoint": ""
+      },
+      "createdAt": "2026-03-22T22:15:14.069Z",
+      "updatedAt": "2026-03-23T19:40:22.759Z"
+    },
+    {
+      "id": "media_1774218645751_94c9d523",
+      "name": "940px-Map-Africa-Regions_(fr).png",
+      "title": "940px-Map-Africa-Regions_(fr).png",
+      "label": "940px-Map-Africa-Regions_(fr).png",
+      "type": "image",
+      "url": "/uploads/2026/03/940px-map-africa-regions_-fr--media_1774218645751_94c9d523.png",
+      "thumbnailUrl": "/uploads/2026/03/940px-map-africa-regions_-fr--media_1774218645751_94c9d523.png",
+      "size": 510794,
+      "uploadedDate": "2026-03-22T22:30:45.753Z",
+      "uploadedBy": "a603e0d4-cef1-44dc-aea0-126e348839b2",
+      "alt": "940px-Map-Africa-Regions_(fr).png",
+      "caption": "940px-Map-Africa-Regions_(fr).png",
+      "tags": [],
+      "source": "local-disk",
+      "metadata": {
+        "mimeType": "image/png",
+        "checksumSha256": "45ff09f0fc2905cfd8b9111ddd6092a1b6a78beb30f3f8e9946ab26524937d0e",
+        "license": "",
+        "focalPoint": ""
+      },
+      "createdAt": "2026-03-22T22:30:45.753Z",
+      "updatedAt": "2026-03-23T19:40:22.759Z"
+    },
+    {
+      "id": "media_1774294667569_568cccde",
+      "name": "Beelink-SER3-Mini-PC-AMD-Ryzen-7-16GB-RAM-512GB-475307-0.jpg",
+      "title": "Beelink-SER3-Mini-PC-AMD-Ryzen-7-16GB-RAM-512GB-475307-0.jpg",
+      "label": "Beelink-SER3-Mini-PC-AMD-Ryzen-7-16GB-RAM-512GB-475307-0.jpg",
+      "type": "image",
+      "url": "/uploads/2026/03/beelink-ser3-mini-pc-amd-ryzen-7-16gb-ram-512gb-475307-0-media_1774294667569_568cccde.jpg",
+      "thumbnailUrl": "/uploads/2026/03/beelink-ser3-mini-pc-amd-ryzen-7-16gb-ram-512gb-475307-0-media_1774294667569_568cccde.jpg",
+      "size": 278324,
+      "uploadedDate": "2026-03-23T19:37:47.571Z",
+      "uploadedBy": "165d86ac-2eb9-43c4-b515-a34228b4e45e",
+      "alt": "Beelink-SER3-Mini-PC-AMD-Ryzen-7-16GB-RAM-512GB-475307-0.jpg",
+      "caption": "Beelink-SER3-Mini-PC-AMD-Ryzen-7-16GB-RAM-512GB-475307-0.jpg",
+      "tags": [],
+      "source": "local-disk",
+      "metadata": {
+        "mimeType": "image/jpeg",
+        "checksumSha256": "b86378b7b23abc6ba944ad7f273d813315de49295c07d9c3f21a10a801e772d3",
+        "license": "",
+        "focalPoint": ""
+      },
+      "createdAt": "2026-03-23T19:37:47.571Z",
+      "updatedAt": "2026-03-23T19:40:22.759Z"
+    },
+    {
+      "id": "media_1774294689615_60c7a8fd",
+      "name": "WhatsApp Image 2025-02-23 at 21.49.22.jpeg",
+      "title": "WhatsApp Image 2025-02-23 at 21.49.22.jpeg",
+      "label": "WhatsApp Image 2025-02-23 at 21.49.22.jpeg",
+      "type": "image",
+      "url": "/uploads/2026/03/whatsapp-image-2025-02-23-at-21.49.22-media_1774294689615_60c7a8fd.jpeg",
+      "thumbnailUrl": "/uploads/2026/03/whatsapp-image-2025-02-23-at-21.49.22-media_1774294689615_60c7a8fd.jpeg",
+      "size": 45157,
+      "uploadedDate": "2026-03-23T19:38:09.617Z",
+      "uploadedBy": "165d86ac-2eb9-43c4-b515-a34228b4e45e",
+      "alt": "WhatsApp Image 2025-02-23 at 21.49.22.jpeg",
+      "caption": "WhatsApp Image 2025-02-23 at 21.49.22.jpeg",
+      "tags": [],
+      "source": "local-disk",
+      "metadata": {
+        "mimeType": "image/jpeg",
+        "checksumSha256": "11ba41cbd6f677891d57acac9058303c4d00bd345d7b7b479deb921307d8736a",
+        "license": "",
+        "focalPoint": ""
+      },
+      "createdAt": "2026-03-23T19:38:09.617Z",
+      "updatedAt": "2026-03-23T19:40:22.759Z"
+    },
+    {
+      "id": "media_1774294822756_21fa8d29",
+      "name": "WhatsApp Image 2025-02-24 at 13.01.14 (1).jpeg",
+      "title": "WhatsApp Image 2025-02-24 at 13.01.14 (1).jpeg",
+      "label": "WhatsApp Image 2025-02-24 at 13.01.14 (1).jpeg",
+      "type": "image",
+      "url": "/uploads/2026/03/whatsapp-image-2025-02-24-at-13.01.14-1--media_1774294822756_21fa8d29.jpeg",
+      "thumbnailUrl": "/uploads/2026/03/whatsapp-image-2025-02-24-at-13.01.14-1--media_1774294822756_21fa8d29.jpeg",
+      "size": 76322,
+      "uploadedDate": "2026-03-23T19:40:22.757Z",
+      "uploadedBy": "165d86ac-2eb9-43c4-b515-a34228b4e45e",
+      "alt": "WhatsApp Image 2025-02-24 at 13.01.14 (1).jpeg",
+      "caption": "WhatsApp Image 2025-02-24 at 13.01.14 (1).jpeg",
+      "tags": [],
+      "source": "local-disk",
+      "metadata": {
+        "mimeType": "image/jpeg",
+        "checksumSha256": "0301116f02d80bc4ced4a6812ef128eabb9c19b585eb2d271b5fc1e37d6bcf03",
+        "license": "",
+        "focalPoint": ""
+      },
+      "createdAt": "2026-03-23T19:40:22.757Z",
+      "updatedAt": "2026-03-23T19:40:22.757Z"
     }
   ],
   "services": [
@@ -749,8 +1237,41 @@
       "updatedAt": "2026-04-04T10:35:00.015Z"
     }
   ],
-  "pageContent": null,
-  "settings": null,
+  "pageContent": {
+    "home": {
+      "heroBadge": "Agence de communications",
+      "heroTitleLine1": "Donnez du reliefs",
+      "heroTitleLine2": "à votre communication",
+      "heroDescription": "Un hero premium avec animation 3D légère, pour valoriser votre image de marque et présenter vos services avec impact.",
+      "heroPrimaryCtaLabel": "Découvrir nos services",
+      "heroPrimaryCtaHref": "#services",
+      "heroSecondaryCtaLabel": "Lancer un projet",
+      "heroSecondaryCtaHref": "#/contact",
+      "aboutBadge": "À PROPOS DE NOUS",
+      "aboutTitle": "Innovation & Excellence Digitale",
+      "aboutParagraphOne": "SMOVE Communication est une agence digitale basée en Côte d'Ivoire, spécialisée dans la création de solutions digitales innovantes. Nous accompagnons les entreprises dans leur transformation digitale avec passion et expertise.",
+      "aboutParagraphTwo": "Notre équipe de professionnels talentueux combine créativité, technologie et stratégie pour créer des expériences digitales qui marquent les esprits et génèrent des résultats mesurables.",
+      "aboutCtaLabel": "Découvrir notre équipe",
+      "aboutCtaHref": "#portfolio",
+      "aboutImage": "",
+      "servicesIntroTitle": "Ce que nous faisons",
+      "servicesIntroSubtitle": "Des solutions digitales complètes pour propulser votre entreprise vers le succès",
+      "portfolioBadge": "PORTFOLIO",
+      "portfolioTitle": "Nos derniers projets",
+      "portfolioSubtitle": "Découvrez comment nous avons aidé nos clients à atteindre leurs objectifs",
+      "portfolioCtaLabel": "Voir tous nos projets",
+      "portfolioCtaHref": "#projects",
+      "blogBadge": "BLOG",
+      "blogTitle": "Derniers articles",
+      "blogSubtitle": "Actualités, conseils et insights sur le digital",
+      "blogCtaLabel": "Voir tous les articles",
+      "blogCtaHref": "#blog",
+      "contactTitle": "Travaillons ensemble",
+      "contactSubtitle": "Vous avez un projet en tête ? Contactez-nous et discutons de la manière dont nous pouvons vous aider à le réaliser.",
+      "contactSubmitLabel": "Envoyer le message"
+    }
+  },
+  "settings": {},
   "settingsHistory": [],
   "migrationHistory": [
     {
@@ -766,6 +1287,23 @@
       "toVersion": 3,
       "migratedAt": "2026-04-04T10:49:59.732Z",
       "note": "Initialized settings history baseline for auditability and rollback."
+    }
+  ],
+  "recoveryLog": [
+    {
+      "ranAt": "2026-05-23T10:58:48.700Z",
+      "report": {
+        "projectsFound": 21,
+        "projectsRestored": 9,
+        "servicesFound": 15,
+        "servicesRestored": 0,
+        "articlesFound": 10,
+        "articlesRestored": 1,
+        "mediaFound": 9,
+        "mediaRestored": 7,
+        "skippedDuplicates": 38,
+        "unresolvedMediaRefs": 0
+      }
     }
   ]
 }

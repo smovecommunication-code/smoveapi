@@ -5,11 +5,12 @@
   "scripts": {
     "dev": "node server/index.js",
     "start": "node server/index.js",
-     "build": "node -e \"console.log('API build step not required')\""
+    "build": "node -e \"console.log('API build step not required')\"",
+    "recover:cms": "node scripts/recoverCmsContent.js"
   },
-"engines": {
-  "node": ">=20 <=22"
-},
+  "engines": {
+    "node": ">=20 <=22"
+  },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "connect-mongo": "^5.1.0",
