@@ -3,6 +3,7 @@ const { requireAuthenticated, requirePermission } = require('../middleware/authz
 const { Permissions } = require('../security/rbac');
 const { sendSuccess, sendError } = require('../utils/apiResponse');
 const { logInfo, logWarn } = require('../utils/logger');
+const { API_ORIGIN } = require('../config/env');
 
 const { normalizeMediaReference } = require('../utils/mediaResolver');
 
@@ -132,6 +133,14 @@ function parseMultipartFormData(req) {
 
 function createContentRoutes({ contentService, auditService, mediaStorage }) {
   const router = express.Router();
+  const absolutizeMediaUrl = (value) => {
+    const normalized = `${value || ''}`.trim();
+    if (!normalized) return '';
+    if (/^[a-zA-Z][a-zA-Z\d+.-]*:/.test(normalized) || normalized.startsWith('//')) return normalized;
+    if (!API_ORIGIN) return normalized;
+    if (normalized.startsWith('/')) return `${API_ORIGIN}${normalized}`;
+    return `${API_ORIGIN}/${normalized}`;
+  };
   const toCanonicalMedia = (mediaFile) => {
     if (!mediaFile || typeof mediaFile !== 'object') return null;
     const filename = `${mediaFile.filename || mediaFile.name || ''}`.trim();
@@ -144,7 +153,7 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       filename,
       mimeType: mediaFile.mimeType || mediaFile.metadata?.mimeType || '',
       size: Number(mediaFile.size || 0),
-      url: mediaFile.url || mediaFile.publicUrl || publicPath,
+      url: absolutizeMediaUrl(mediaFile.url || mediaFile.publicUrl || publicPath),
       publicPath,
       alt: mediaFile.alt || '',
       caption: mediaFile.caption || '',
