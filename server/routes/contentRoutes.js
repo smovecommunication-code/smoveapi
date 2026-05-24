@@ -555,9 +555,12 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
     const mediaPayload = {
       id: stored.file.id,
       name: uploadInput.filename,
+      filename: stored.file.filename || uploadInput.filename,
       title: uploadInput.title || uploadInput.filename,
       label: uploadInput.title || uploadInput.filename,
-      type: stored.file.mediaType,
+      type: stored.file.mediaType || ((stored.file.mimeType || '').startsWith('image/') ? 'image' : 'file'),
+      mimeType: stored.file.mimeType,
+      publicPath: stored.file.publicPath,
       url: stored.file.publicUrl,
       thumbnailUrl: stored.file.publicUrl,
       size: stored.file.size,
