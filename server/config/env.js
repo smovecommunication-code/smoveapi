@@ -44,10 +44,19 @@ function parseBoolean(value, fallback = false) {
 const API_PORT = parseIntOrDefault(process.env.API_PORT, 3001);
 const FRONTEND_PORT = parseIntOrDefault(process.env.CLIENT_PORT ?? process.env.VITE_PORT, 5173);
 const CMS_PORT = parseIntOrDefault(process.env.VITE_CMS_PORT, 5174);
-const SESSION_SECRET =
-  process.env.SESSION_SECRET ??
-  process.env.APP_SESSION_SECRET ??
-  null;
+function resolveSessionSecret() {
+  const candidates = [process.env.SESSION_SECRET, process.env.APP_SESSION_SECRET];
+  for (const value of candidates) {
+    if (typeof value !== 'string') continue;
+    const trimmed = value.trim();
+    if (trimmed.length > 0) {
+      return trimmed;
+    }
+  }
+  return null;
+}
+
+const SESSION_SECRET = resolveSessionSecret();
 
 function buildDevSessionSecret() {
   return `dev-session-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${process.pid}`;

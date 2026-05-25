@@ -37,6 +37,14 @@ function resolveSessionStoreMode() {
 }
 
 function createSessionMiddleware() {
+  if (!SESSION_SECRET) {
+    throw new Error(
+      isProduction
+        ? 'SESSION_SECRET is required in production.'
+        : '[session] SESSION_SECRET is missing. Provide SESSION_SECRET or APP_SESSION_SECRET.',
+    );
+  }
+
   const resolvedStore = resolveSessionStoreMode();
 
   if (isProduction && resolvedStore.mode !== 'mongo') {
