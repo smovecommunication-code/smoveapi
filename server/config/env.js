@@ -44,7 +44,16 @@ function parseBoolean(value, fallback = false) {
 const API_PORT = parseIntOrDefault(process.env.API_PORT, 3001);
 const FRONTEND_PORT = parseIntOrDefault(process.env.CLIENT_PORT ?? process.env.VITE_PORT, 5173);
 const CMS_PORT = parseIntOrDefault(process.env.VITE_CMS_PORT, 5174);
-const SESSION_SECRET = process.env.SESSION_SECRET ?? 'dev-session-secret-change-me';
+const SESSION_SECRET =
+  process.env.SESSION_SECRET ??
+  process.env.APP_SESSION_SECRET ??
+  null;
+
+function buildDevSessionSecret() {
+  return `dev-session-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${process.pid}`;
+}
+
+const RESOLVED_SESSION_SECRET = SESSION_SECRET ?? (isProduction ? null : buildDevSessionSecret());
 
 const AUTH_STORAGE_MODE = ['auto', 'mongo', 'memory'].includes(process.env.AUTH_STORAGE_MODE)
   ? process.env.AUTH_STORAGE_MODE
@@ -73,10 +82,13 @@ const MEDIA_ALLOWED_MIME_TYPES = (process.env.MEDIA_ALLOWED_MIME_TYPES ?? 'image
   .filter(Boolean);
 
 function assertSessionSecretStrength() {
-  const looksDefault = SESSION_SECRET === 'dev-session-secret-change-me';
-  const tooShort = SESSION_SECRET.length < 32;
+  if (!RESOLVED_SESSION_SECRET) {
+    throw new Error('SESSION_SECRET is required in production.');
+  }
 
-  if (isProduction && (looksDefault || tooShort)) {
+  const tooShort = RESOLVED_SESSION_SECRET.length < 32;
+
+  if (isProduction && tooShort) {
     throw new Error('SESSION_SECRET must be configured with a strong value (>= 32 chars) in production.');
   }
 }
@@ -142,7 +154,7 @@ function buildFrontendOrigins() {
     process.env.VITE_CMS_APP_URL,
     process.env.VITE_PUBLIC_SITE_URL,
     process.env.VITE_PUBLIC_APP_URL,
-    ...(process.env.FRONTEND_ORIGINS ?? '').split(',').map((entry) => entry.trim()),
+    ...(process.env.CORS_ORIGINS ?? process.env.FRONTEND_ORIGINS ?? '').split(',').map((entry) => entry.trim()),
   ];
 
   if (!isProduction) {
@@ -165,6 +177,11 @@ const DEFAULT_FRONTEND_ORIGIN =
   `http://localhost:${FRONTEND_PORT}`;
 const DEFAULT_API_ORIGIN = normalizeOrigin(process.env.API_ORIGIN) ?? `http://localhost:${API_PORT}`;
 
+if (!SESSION_SECRET && !isProduction) {
+  // eslint-disable-next-line no-console
+  console.warn('[session] SESSION_SECRET missing, using temporary development fallback.');
+}
+
 module.exports = {
   isProduction,
   API_PORT,
@@ -173,7 +190,7 @@ module.exports = {
   FRONTEND_ORIGIN: DEFAULT_FRONTEND_ORIGIN,
   FRONTEND_ORIGINS,
   API_ORIGIN: DEFAULT_API_ORIGIN,
-  SESSION_SECRET,
+  SESSION_SECRET: RESOLVED_SESSION_SECRET,
   MONGO_URI: process.env.MONGO_URI ?? process.env.MONGODB_URI ?? '',
   MONGO_DB_NAME: process.env.MONGO_DB_NAME ?? undefined,
   SESSION_TTL_SECONDS: parseIntOrDefault(process.env.SESSION_TTL_SECONDS, 60 * 60 * 24),

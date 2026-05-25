@@ -6,7 +6,8 @@
     "dev": "node server/index.js",
     "start": "node server/index.js",
     "build": "node -e \"console.log('API build step not required')\"",
-    "recover:cms": "node scripts/recoverCmsContent.js"
+    "recover:cms": "node scripts/recoverCmsContent.js",
+    "test": "node --test server/tests/*.test.js"
   },
   "engines": {
     "node": ">=20 <=22"

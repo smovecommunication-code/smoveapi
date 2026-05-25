@@ -76,6 +76,39 @@ describe('env frontend origins', () => {
     expect(() => env.validateCriticalEnv()).not.toThrow();
   });
 
+
+  it('falls back to APP_SESSION_SECRET when SESSION_SECRET is not set', () => {
+    const env = loadEnvWith({
+      NODE_ENV: 'development',
+      SESSION_SECRET: undefined,
+      APP_SESSION_SECRET: 'x'.repeat(40),
+    });
+
+    expect(env.SESSION_SECRET).toBe('x'.repeat(40));
+  });
+
+  it('generates a temporary development session secret when no secret env is configured', () => {
+    const env = loadEnvWith({
+      NODE_ENV: 'development',
+      SESSION_SECRET: undefined,
+      APP_SESSION_SECRET: undefined,
+    });
+
+    expect(typeof env.SESSION_SECRET).toBe('string');
+    expect(env.SESSION_SECRET.length).toBeGreaterThan(20);
+    expect(() => env.validateCriticalEnv()).not.toThrow();
+  });
+
+  it('fails fast in production when no session secret is configured', () => {
+    const env = loadEnvWith({
+      NODE_ENV: 'production',
+      SESSION_SECRET: undefined,
+      APP_SESSION_SECRET: undefined,
+    });
+
+    expect(() => env.validateCriticalEnv()).toThrow(/SESSION_SECRET is required in production/);
+  });
+
   it('requires full Google credentials only when Google login is enabled', () => {
     const env = loadEnvWith({
       NODE_ENV: 'development',
