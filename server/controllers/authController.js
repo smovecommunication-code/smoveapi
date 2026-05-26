@@ -1,7 +1,8 @@
 const crypto = require('crypto');
-const { FRONTEND_ORIGIN, FRONTEND_ORIGINS } = require('../config/env');
+const { FRONTEND_ORIGIN, FRONTEND_ORIGINS, ENABLE_EMAIL_PASSWORD_AUTH } = require('../config/env');
 const { getOrCreateCsrfToken } = require('../middleware/csrf');
 const { sendSuccess, sendError } = require('../utils/apiResponse');
+const { logInfo, logWarn } = require('../utils/logger');
 const { logAuthEvent, listAuthAuditEvents } = require('../utils/authLogger');
 
 function buildSessionMeta(req, user) {
@@ -82,6 +83,30 @@ function parseSafeRedirect(redirectTo, fallback = `${FRONTEND_ORIGIN}/#login`) {
   }
 }
 
+
+function resolveRequestOrigin(req) {
+  return req.get('origin') ?? null;
+}
+
+function isAllowedAuthOrigin(origin) {
+  if (!origin) return true;
+  return FRONTEND_ORIGINS.includes(origin);
+}
+
+function rejectForbiddenOrigin(req, res, endpointName) {
+  const origin = resolveRequestOrigin(req);
+  if (isAllowedAuthOrigin(origin)) return false;
+
+  logWarn('auth_origin_forbidden', {
+    endpoint: endpointName,
+    origin: origin ?? 'none',
+    allowedOrigins: FRONTEND_ORIGINS,
+    reason: 'origin_not_allowed',
+  });
+
+  sendError(res, 403, 'ORIGIN_FORBIDDEN', 'Origin not allowed for authentication');
+  return true;
+}
 function buildAuthController({ authService }) {
   return {
     getSession: async (req, res) => {
@@ -172,6 +197,19 @@ function buildAuthController({ authService }) {
     },
 
     login: async (req, res) => {
+      const origin = resolveRequestOrigin(req);
+      const hasEmail = Boolean(req.body?.email);
+      logInfo('auth_login_attempt', {
+        requestId: req.requestId,
+        origin: origin ?? 'none',
+        emailPasswordAuthEnabled: ENABLE_EMAIL_PASSWORD_AUTH,
+        hasEmail,
+      });
+
+      if (rejectForbiddenOrigin(req, res, 'login')) {
+        return;
+      }
+
       const result = await authService.login(req.body ?? {});
       if (!result.ok) {
         logAuthEvent(req, 'login', 'failure', { code: result.code, reason: result.reason ?? null, email: req.body?.email ?? null });

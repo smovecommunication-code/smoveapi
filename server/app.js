@@ -256,13 +256,25 @@ function createApp(deps = {}) {
   app.use('/api/v1/newsletter', createNewsletterRoutes({ newsletterService }));
 
   app.use((err, req, res, _next) => {
+    if (typeof err?.message === 'string' && err.message.startsWith('CORS origin not allowed:')) {
+      const blockedOrigin = req.get('origin') ?? 'none';
+      logError('cors_origin_forbidden', {
+        requestId: req.requestId,
+        path: req.originalUrl,
+        method: req.method,
+        origin: blockedOrigin,
+        message: err.message,
+      });
+      return sendError(res, 403, 'ORIGIN_FORBIDDEN', 'Origin not allowed by CORS policy');
+    }
+
     logError('api_unhandled_error', {
       requestId: req.requestId,
       path: req.originalUrl,
       method: req.method,
       message: err?.message,
     });
-    sendError(res, 500, 'INTERNAL_ERROR', 'Unexpected error');
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Unexpected error');
   });
 
   return app;
