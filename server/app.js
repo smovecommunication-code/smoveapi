@@ -219,8 +219,10 @@ function createApp(deps = {}) {
   if (!fs.existsSync(MEDIA_UPLOAD_DIR)) {
     fs.mkdirSync(MEDIA_UPLOAD_DIR, { recursive: true });
   }
-  app.use(MEDIA_PUBLIC_BASE_PATH, express.static(path.resolve(MEDIA_UPLOAD_DIR)));
-  app.use(`/api${MEDIA_PUBLIC_BASE_PATH}`, express.static(path.resolve(MEDIA_UPLOAD_DIR)));
+  const uploadRoot = path.resolve(MEDIA_UPLOAD_DIR);
+  logInfo('media_static_config', { uploadRoot, publicBasePath: MEDIA_PUBLIC_BASE_PATH });
+  app.use(MEDIA_PUBLIC_BASE_PATH, express.static(uploadRoot));
+  app.use(`/api${MEDIA_PUBLIC_BASE_PATH}`, express.static(uploadRoot));
   app.use(exposeCsrfToken);
 
   app.get('/', (_req, res) => {

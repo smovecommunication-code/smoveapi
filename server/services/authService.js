@@ -515,24 +515,26 @@ class AuthService {
 
     const user = await this.userRepository.findByEmailWithPassword(email);
     if (!user) {
-      return { ok: false, status: 401, code: 'INVALID_CREDENTIALS', message: 'Invalid credentials', reason: 'email_not_found' };
+      return { ok: false, status: 401, code: 'INVALID_CREDENTIALS', message: 'Invalid credentials', reason: 'email_not_found', userFound: false };
     }
 
     if (!user.providers?.includes('local') || !user.passwordHash) {
-      return { ok: false, status: 401, code: 'INVALID_CREDENTIALS', message: 'Invalid credentials', reason: 'local_password_missing' };
+      return { ok: false, status: 401, code: 'INVALID_CREDENTIALS', message: 'Invalid credentials', reason: 'local_password_missing', userFound: true };
     }
 
+    const compareStartedAt = Date.now();
     const isValidPassword = await verifyPassword(password, user.passwordHash);
+    const passwordCompareDurationMs = Date.now() - compareStartedAt;
     if (!isValidPassword) {
-      return { ok: false, status: 401, code: 'INVALID_CREDENTIALS', message: 'Invalid credentials', reason: 'password_mismatch' };
+      return { ok: false, status: 401, code: 'INVALID_CREDENTIALS', message: 'Invalid credentials', reason: 'password_mismatch', userFound: true, passwordCompareDurationMs };
     }
 
     if (user.accountStatus === 'suspended') {
-      return { ok: false, status: 403, code: 'ACCOUNT_SUSPENDED', message: 'Account suspended' };
+      return { ok: false, status: 403, code: 'ACCOUNT_SUSPENDED', message: 'Account suspended', userFound: true, passwordCompareDurationMs };
     }
 
     const updatedUser = await this.userRepository.updateLastLoginAt(user.id, new Date());
-    return { ok: true, user: sanitizeUser(updatedUser ?? user) };
+    return { ok: true, user: sanitizeUser(updatedUser ?? user), userFound: true, passwordCompareDurationMs };
   }
 
   async loginWithOAuth(params) {
