@@ -1,12 +1,9 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 const { requireAuthenticated, requirePermission } = require('../middleware/authz');
 const { Permissions } = require('../security/rbac');
 const { sendSuccess, sendError } = require('../utils/apiResponse');
 const { logInfo, logWarn } = require('../utils/logger');
 const { API_ORIGIN } = require('../config/env');
-const { MEDIA_UPLOAD_DIR, MEDIA_PUBLIC_BASE_PATH } = require('../config/env');
 
 const { normalizeMediaReference } = require('../utils/mediaResolver');
 
@@ -511,27 +508,6 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
 
   router.get('/media', requirePermission(Permissions.CONTENT_READ), (req, res) =>
     sendSuccess(res, 200, { mediaFiles: contentService.listMediaFiles().map(toCanonicalMedia).filter(Boolean) }));
-  router.get('/media/diagnostics', requirePermission(Permissions.CONTENT_READ), (req, res) => {
-    const mediaFiles = contentService.listMediaFiles({ includeArchived: true }).map(toCanonicalMedia).filter(Boolean);
-    const uploadRoot = path.resolve(MEDIA_UPLOAD_DIR);
-    const missingFileRecords = mediaFiles
-      .map((media) => {
-        const relative = `${media.publicPath || ''}`.replace(/^\/uploads\/?/, '').replace(/^\/+/, '');
-        const filePath = relative ? path.join(uploadRoot, relative) : '';
-        const exists = filePath ? fs.existsSync(filePath) : false;
-        return exists ? null : { mediaId: media.id, url: media.url, publicPath: media.publicPath, expectedPath: filePath };
-      })
-      .filter(Boolean);
-    return sendSuccess(res, 200, {
-      diagnostics: {
-        mediaCount: mediaFiles.length,
-        missingFileCount: missingFileRecords.length,
-        missingFileRecords,
-        uploadRoot,
-        publicBasePath: MEDIA_PUBLIC_BASE_PATH,
-      },
-    });
-  });
 
   router.get('/media/:id/references', requirePermission(Permissions.CONTENT_READ), (req, res) =>
     sendSuccess(res, 200, { references: contentService.findMediaReferences(req.params.id) }));

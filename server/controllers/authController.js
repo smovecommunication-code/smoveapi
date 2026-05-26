@@ -25,28 +25,7 @@ function buildSessionMeta(req, user) {
   };
 }
 
-function saveSessionWithTimeout(req, timeoutMs = 4000) {
-  return new Promise((resolve) => {
-    let settled = false;
-    const timer = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      resolve({ ok: false, timedOut: true, error: new Error('session_save_timeout') });
-    }, timeoutMs);
-    req.session.save((saveError) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      if (saveError) {
-        resolve({ ok: false, timedOut: false, error: saveError });
-        return;
-      }
-      resolve({ ok: true });
-    });
-  });
-}
-
-function startSession(req, res, user, eventName, statusCode = 200, extras = {}, logCtx = {}) {
+function startSession(req, res, user, eventName, statusCode = 200, extras = {}) {
   req.session.regenerate((regenerateError) => {
     if (regenerateError) {
       logAuthEvent(req, eventName, 'failure', { code: 'SESSION_ERROR' });
@@ -61,19 +40,11 @@ function startSession(req, res, user, eventName, statusCode = 200, extras = {}, 
     req.session.accountStatus = user.accountStatus ?? 'active';
     req.session.authenticatedAt = new Date().toISOString();
 
-    return saveSessionWithTimeout(req).then((saveResult) => {
-      if (!saveResult.ok) {
-        logInfo('auth_session_save_result', {
-          requestId: req.requestId,
-          event: eventName,
-          success: false,
-          timedOut: saveResult.timedOut,
-          reason: saveResult.error?.message ?? 'unknown',
-        });
-        logAuthEvent(req, eventName, 'failure', { code: saveResult.timedOut ? 'SESSION_SAVE_TIMEOUT' : 'SESSION_SAVE_ERROR' });
-        return sendError(res, 500, saveResult.timedOut ? 'SESSION_SAVE_TIMEOUT' : 'SESSION_SAVE_ERROR', 'Failed to persist session');
+    return req.session.save((saveError) => {
+      if (saveError) {
+        logAuthEvent(req, eventName, 'failure', { code: 'SESSION_SAVE_ERROR' });
+        return sendError(res, 500, 'SESSION_SAVE_ERROR', 'Failed to persist session');
       }
-      logInfo('auth_session_save_result', { requestId: req.requestId, event: eventName, success: true, timedOut: false });
 
       logInfo('auth_session_cookie_debug', {
         requestId: req.requestId,
@@ -92,7 +63,6 @@ function startSession(req, res, user, eventName, statusCode = 200, extras = {}, 
         role: user.role,
         sessionId: req.sessionID ?? null,
         origin: resolveRequestOrigin(req) ?? 'none',
-        durationMs: Date.now() - (logCtx.startedAtMs ?? Date.now()),
       });
       logAuthEvent(req, eventName, 'success', { userId: user.id, email: user.email });
       return sendSuccess(res, statusCode, {
@@ -313,7 +283,6 @@ function buildAuthController({ authService }) {
     },
 
     login: async (req, res) => {
-      const startedAtMs = Date.now();
       const origin = resolveRequestOrigin(req);
       const hasEmail = Boolean(req.body?.email);
       logInfo('auth_login_attempt', {
@@ -328,22 +297,12 @@ function buildAuthController({ authService }) {
       }
 
       const result = await authService.login(req.body ?? {});
-      logInfo('auth_login_validation', {
-        requestId: req.requestId,
-        origin: origin ?? 'none',
-        hasEmail,
-        userFound: result.userFound ?? null,
-        passwordCompareDurationMs: result.passwordCompareDurationMs ?? null,
-        failureReason: result.ok ? null : result.reason ?? result.code,
-      });
       if (!result.ok) {
         logAuthEvent(req, 'login', 'failure', { code: result.code, reason: result.reason ?? null, email: req.body?.email ?? null });
-        logInfo('auth_login_response', { requestId: req.requestId, status: result.status, durationMs: Date.now() - startedAtMs });
         return sendError(res, result.status, result.code, result.message);
       }
 
-      logInfo('auth_login_response', { requestId: req.requestId, status: 200, durationMs: Date.now() - startedAtMs });
-      return startSession(req, res, result.user, 'login', 200, {}, { startedAtMs });
+      return startSession(req, res, result.user, 'login', 200);
     },
 
     resendVerification: async (req, res) => {
