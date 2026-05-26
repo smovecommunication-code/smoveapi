@@ -73,6 +73,7 @@ function createSessionMiddleware() {
         httpOnly: true,
         secure: isProduction,
         sameSite: isProduction ? 'none' : 'lax',
+        path: '/',
         maxAge: SESSION_TTL_SECONDS * 1000,
       },
       proxy: isProduction,

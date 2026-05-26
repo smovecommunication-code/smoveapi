@@ -46,6 +46,16 @@ function startSession(req, res, user, eventName, statusCode = 200, extras = {}) 
         return sendError(res, 500, 'SESSION_SAVE_ERROR', 'Failed to persist session');
       }
 
+      logInfo('auth_session_cookie_debug', {
+        requestId: req.requestId,
+        origin: resolveRequestOrigin(req) ?? 'none',
+        endpoint: eventName,
+        sessionIdBeforeSave: req.sessionID ?? null,
+        sessionIdAfterSave: req.sessionID ?? null,
+        cookie: extractCookieDebugConfig(req),
+        hasSetCookieHeader: Boolean(res.getHeader('set-cookie')),
+      });
+
       logInfo('auth_login_success', {
         requestId: req.requestId,
         event: eventName,
@@ -122,6 +132,20 @@ function resolveRequestOrigin(req) {
   return req.get('origin') ?? null;
 }
 
+
+function extractCookieDebugConfig(req) {
+  const cookie = req.session?.cookie ?? null;
+  if (!cookie) return null;
+  return {
+    secure: cookie.secure,
+    sameSite: cookie.sameSite,
+    httpOnly: cookie.httpOnly,
+    path: cookie.path,
+    maxAge: cookie.maxAge,
+  };
+}
+
+
 function isAllowedAuthOrigin(origin) {
   if (!origin) return true;
   return FRONTEND_ORIGINS.includes(origin);
@@ -147,6 +171,14 @@ function buildAuthController({ authService }) {
       const sessionUser = req.session?.user ?? null;
       const sessionUserId = req.session?.userId ?? sessionUser?.id ?? null;
       if (!sessionUserId) {
+        logInfo('auth_session_cookie_debug', {
+          requestId: req.requestId,
+          endpoint: 'session',
+          origin: resolveRequestOrigin(req) ?? 'none',
+          authenticated: false,
+          hasCookieHeader: Boolean(req.get('cookie')),
+          sessionId: req.sessionID ?? null,
+        });
         logInfo('auth_session_check', { requestId: req.requestId, authenticated: false, sessionId: req.sessionID ?? null });
         return sendSuccess(res, 200, { authenticated: false, user: null, csrfToken: getOrCreateCsrfToken(req), session: buildSessionMeta(req, null) });
       }
@@ -165,6 +197,14 @@ function buildAuthController({ authService }) {
       }
 
       req.session.user = sanitizeSessionUser(user);
+      logInfo('auth_session_cookie_debug', {
+        requestId: req.requestId,
+        endpoint: 'session',
+        origin: resolveRequestOrigin(req) ?? 'none',
+        authenticated: true,
+        hasCookieHeader: Boolean(req.get('cookie')),
+        sessionId: req.sessionID ?? null,
+      });
       logInfo('auth_session_check', { requestId: req.requestId, authenticated: true, sessionId: req.sessionID ?? null });
       logAuthEvent(req, 'session', 'success', { authenticated: true });
       return sendSuccess(res, 200, {
