@@ -182,8 +182,7 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
   const isPublicBlogEligible = (post) => isPublishedOrLegacy(post.status) && post.title?.trim() && post.slug?.trim();
   const isPublicProjectEligible = (project) =>
     isPublishedOrLegacy(project.status) &&
-    project.title?.trim() &&
-    project.slug?.trim();
+    project.title?.trim();
 
   router.get('/public/projects', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');

@@ -1796,13 +1796,17 @@ class ContentService {
     const roleSocialImage = asTrimmedString(project?.mediaRoles?.socialImage);
     const seoSocialImage = asTrimmedString(project?.seo?.socialImage);
     const roleGalleryImages = Array.isArray(project?.mediaRoles?.galleryImages) ? normalizeStringArray(project.mediaRoles.galleryImages) : [];
+    const directMedia = asTrimmedString(project?.media) || asTrimmedString(project?.image) || asTrimmedString(project?.imageUrl) || asTrimmedString(project?.cardImage) || asTrimmedString(project?.heroImage);
     const featuredImage =
       roleCardImage ||
       roleHeroImage ||
       roleCoverImage ||
       asTrimmedString(project?.featuredImage) ||
+      asTrimmedString(project?.cardImage) ||
       asTrimmedString(project?.mainImage) ||
-      'project cover image';
+      asTrimmedString(project?.heroImage) ||
+      directMedia ||
+      ''; 
     const heroImage =
       roleHeroImage ||
       roleCoverImage ||
@@ -1832,13 +1836,13 @@ class ContentService {
       id: asTrimmedString(project?.id),
       title,
       slug,
-      summary: asTrimmedString(project?.summary) || undefined,
+      summary: asTrimmedString(project?.summary) || asTrimmedString(project?.description).slice(0, 180) || '',
       client: asTrimmedString(project?.client),
       category: asTrimmedString(project?.category),
       year: asTrimmedString(project?.year) || new Date().getFullYear().toString(),
-      description: asTrimmedString(project?.description) || asTrimmedString(project?.summary) || 'Description à compléter.',
-      challenge: asTrimmedString(project?.challenge) || 'Challenge à compléter.',
-      solution: asTrimmedString(project?.solution) || 'Solution à compléter.',
+      description: asTrimmedString(project?.description) || asTrimmedString(project?.summary) || '',
+      challenge: asTrimmedString(project?.challenge) || '',
+      solution: asTrimmedString(project?.solution) || '',
       results: normalizeStringArray(project?.results),
       tags: normalizeStringArray(project?.tags),
       mainImage: heroImage,
@@ -1908,18 +1912,27 @@ class ContentService {
         typeof project.client === 'string' &&
         typeof project.category === 'string' &&
         typeof project.year === 'string' &&
-        /^\d{4}$/.test(project.year) &&
         typeof project.description === 'string' &&
         typeof project.challenge === 'string' &&
         typeof project.solution === 'string' &&
         Array.isArray(project.results) &&
         Array.isArray(project.tags) &&
         typeof project.mainImage === 'string' &&
-        project.mainImage.length > 0 &&
-        this.isValidMediaLink(project.mainImage) &&
         typeof project.featuredImage === 'string' &&
-        project.featuredImage.length > 0 &&
-        this.isValidMediaLink(project.featuredImage) &&
+        (() => {
+          const mediaCandidates = [
+            project.mediaRoles?.cardImage,
+            project.mediaRoles?.heroImage,
+            project.cardImage,
+            project.heroImage,
+            project.featuredImage,
+            project.mainImage,
+            project.image,
+            project.imageUrl,
+            project.media,
+          ].filter((entry) => typeof entry === 'string' && entry.trim().length > 0);
+          return mediaCandidates.length > 0 && mediaCandidates.some((entry) => this.isValidMediaLink(entry));
+        })() &&
         typeof project.imageAlt === 'string' &&
         (project.mediaRoles === undefined ||
           (typeof project.mediaRoles === 'object' &&
