@@ -5,6 +5,16 @@ const { sendSuccess, sendError } = require('../utils/apiResponse');
 const { logInfo, logWarn } = require('../utils/logger');
 const { logAuthEvent, listAuthAuditEvents } = require('../utils/authLogger');
 
+function sanitizeSessionUser(user) {
+  if (!user) return null;
+  return {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    name: user.name ?? null,
+  };
+}
+
 function buildSessionMeta(req, user) {
   return {
     sessionId: req.sessionID ?? null,
@@ -23,18 +33,35 @@ function startSession(req, res, user, eventName, statusCode = 200, extras = {}) 
     }
 
     req.session.userId = user.id;
+    req.session.user = sanitizeSessionUser(user);
     req.session.role = user.role;
     req.session.organizationId = user.organizationId ?? 'org_default';
     req.session.planTier = user.planTier ?? 'free';
     req.session.accountStatus = user.accountStatus ?? 'active';
     req.session.authenticatedAt = new Date().toISOString();
 
-    logAuthEvent(req, eventName, 'success', { userId: user.id, email: user.email });
-    return sendSuccess(res, statusCode, {
-      user,
-      csrfToken: getOrCreateCsrfToken(req),
-      session: buildSessionMeta(req, user),
-      ...extras,
+    return req.session.save((saveError) => {
+      if (saveError) {
+        logAuthEvent(req, eventName, 'failure', { code: 'SESSION_SAVE_ERROR' });
+        return sendError(res, 500, 'SESSION_SAVE_ERROR', 'Failed to persist session');
+      }
+
+      logInfo('auth_login_success', {
+        requestId: req.requestId,
+        event: eventName,
+        userId: user.id,
+        role: user.role,
+        sessionId: req.sessionID ?? null,
+        origin: resolveRequestOrigin(req) ?? 'none',
+      });
+      logAuthEvent(req, eventName, 'success', { userId: user.id, email: user.email });
+      return sendSuccess(res, statusCode, {
+        authenticated: true,
+        user: req.session.user,
+        csrfToken: getOrCreateCsrfToken(req),
+        session: buildSessionMeta(req, user),
+        ...extras,
+      });
     });
   });
 }
@@ -47,13 +74,20 @@ function finishOAuthSession(req, res, user, eventName, redirectTo) {
     }
 
     req.session.userId = user.id;
+    req.session.user = sanitizeSessionUser(user);
     req.session.role = user.role;
     req.session.organizationId = user.organizationId ?? 'org_default';
     req.session.planTier = user.planTier ?? 'free';
     req.session.accountStatus = user.accountStatus ?? 'active';
     req.session.authenticatedAt = new Date().toISOString();
-    logAuthEvent(req, eventName, 'success', { userId: user.id, email: user.email });
-    return res.redirect(redirectTo);
+    return req.session.save((saveError) => {
+      if (saveError) {
+        logAuthEvent(req, eventName, 'failure', { code: 'SESSION_SAVE_ERROR' });
+        return res.redirect(`${FRONTEND_ORIGIN}/#login?oauthError=SESSION_ERROR`);
+      }
+      logAuthEvent(req, eventName, 'success', { userId: user.id, email: user.email });
+      return res.redirect(redirectTo);
+    });
   });
 }
 
@@ -110,20 +144,32 @@ function rejectForbiddenOrigin(req, res, endpointName) {
 function buildAuthController({ authService }) {
   return {
     getSession: async (req, res) => {
-      const user = await authService.getSessionUser(req.session?.userId);
+      const sessionUser = req.session?.user ?? null;
+      const sessionUserId = req.session?.userId ?? sessionUser?.id ?? null;
+      if (!sessionUserId) {
+        logInfo('auth_session_check', { requestId: req.requestId, authenticated: false, sessionId: req.sessionID ?? null });
+        return sendSuccess(res, 200, { authenticated: false, user: null, csrfToken: getOrCreateCsrfToken(req), session: buildSessionMeta(req, null) });
+      }
 
+      const user = await authService.getSessionUser(sessionUserId);
       if (!user) {
         req.session.userId = null;
+        req.session.user = null;
         req.session.role = null;
         req.session.organizationId = null;
         req.session.planTier = null;
         req.session.accountStatus = null;
         req.session.authenticatedAt = null;
+        logInfo('auth_session_check', { requestId: req.requestId, authenticated: false, sessionId: req.sessionID ?? null });
+        return sendSuccess(res, 200, { authenticated: false, user: null, csrfToken: getOrCreateCsrfToken(req), session: buildSessionMeta(req, null) });
       }
 
-      logAuthEvent(req, 'session', 'success', { authenticated: Boolean(user) });
+      req.session.user = sanitizeSessionUser(user);
+      logInfo('auth_session_check', { requestId: req.requestId, authenticated: true, sessionId: req.sessionID ?? null });
+      logAuthEvent(req, 'session', 'success', { authenticated: true });
       return sendSuccess(res, 200, {
-        user,
+        authenticated: true,
+        user: req.session.user,
         csrfToken: getOrCreateCsrfToken(req),
         session: buildSessionMeta(req, user),
       });

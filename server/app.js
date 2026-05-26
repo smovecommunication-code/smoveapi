@@ -193,11 +193,18 @@ function createApp(deps = {}) {
       req.appUser = await authService.getSessionUser(sessionUserId);
       if (!req.appUser) {
         req.session.userId = null;
+        req.session.user = null;
         req.session.role = null;
         req.session.organizationId = null;
         req.session.planTier = null;
         req.session.accountStatus = null;
       } else {
+        req.session.user = {
+          id: req.appUser.id,
+          email: req.appUser.email,
+          role: req.appUser.role,
+          name: req.appUser.name ?? null,
+        };
         req.session.role = req.appUser.role;
         req.session.organizationId = req.appUser.organizationId ?? 'org_default';
         req.session.planTier = req.appUser.planTier ?? 'free';
