@@ -35,6 +35,31 @@ function withEnv(overrides, run) {
 }
 
 describe('session cors options', () => {
+  it('uses secure cross-site cookie settings when frontend origins are remote even if NODE_ENV is unset', async () => {
+    const outcome = await withEnv(
+      {
+        NODE_ENV: undefined,
+        FRONTEND_ORIGINS: 'https://www.smovecommunication.com,https://smoovecms.vercel.app',
+        SESSION_SECRET: 'a'.repeat(64),
+        MONGO_URI: 'mongodb://localhost:27017/smove-test',
+        SESSION_STORE_MODE: 'memory',
+      },
+      async ({ createSessionMiddleware }) => {
+        const { middleware } = createSessionMiddleware();
+        return {
+          proxy: middleware.proxy,
+          cookie: middleware.cookie,
+        };
+      },
+    );
+
+    expect(outcome.proxy).toBe(true);
+    expect(outcome.cookie.secure).toBe(true);
+    expect(outcome.cookie.sameSite).toBe('none');
+    expect(outcome.cookie.httpOnly).toBe(true);
+    expect(outcome.cookie.path).toBe('/');
+  });
+
   it('returns exact allowed origin (not wildcard semantics) when credentials are enabled', async () => {
     const outcome = await withEnv(
       {
