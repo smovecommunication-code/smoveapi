@@ -17,7 +17,7 @@ const { API_ORIGIN } = require('../config/env');
 const crypto = require('crypto');
 
 const BLOG_STATUSES = new Set(['draft', 'in_review', 'published', 'archived']);
-const MEDIA_TYPES = new Set(['image', 'video', 'document']);
+const MEDIA_TYPES = new Set(['image', 'video', 'document', 'file']);
 const PROJECT_STATUSES = new Set(['draft', 'in_review', 'published', 'archived']);
 const SERVICE_STATUSES = new Set(['draft', 'published', 'archived']);
 const SERVICE_ICONS = new Set(['palette', 'code', 'megaphone', 'video', 'box']);
@@ -781,7 +781,7 @@ class ContentService {
       if (!publishability.ok) {
         return { ok: false, error: { code: 'PROJECT_NOT_PUBLISHABLE', message: publishability.message } };
       }
-      if (!existing || !['in_review', 'published'].includes(existing.status)) {
+      if (existing && !['in_review', 'published'].includes(existing.status)) {
         return { ok: false, error: { code: 'PROJECT_INVALID_STATUS_TRANSITION', message: 'Project must be in review before publishing.' } };
       }
     }
@@ -1454,17 +1454,8 @@ class ContentService {
 
 
   evaluateProjectPublishability(project) {
-    const summarySource = typeof project.summary === 'string' && project.summary.trim()
-      ? project.summary.trim()
-      : `${project.description || ''}`.trim();
-    if (!project.title?.trim() || !project.slug?.trim() || !project.featuredImage?.trim()) {
+    if (!project.title?.trim() || !project.slug?.trim()) {
       return { ok: false, message: 'Missing required publish fields.' };
-    }
-    if (!this.isValidMediaLink(project.featuredImage)) {
-      return { ok: false, message: 'Featured image must be a valid URL or media reference.' };
-    }
-    if (!hasMinTrimmedLength(summarySource, 24)) {
-      return { ok: false, message: 'Summary/description must contain at least 24 characters.' };
     }
     return { ok: true };
   }
@@ -1833,7 +1824,7 @@ class ContentService {
 
     return {
       ...project,
-      id: asTrimmedString(project?.id),
+      id: asTrimmedString(project?.id) || `project-${Date.now()}`,
       title,
       slug,
       summary: asTrimmedString(project?.summary) || asTrimmedString(project?.description).slice(0, 180) || '',
@@ -1900,12 +1891,17 @@ class ContentService {
   }
 
   validateProject(project) {
+    const isOptionalMediaLink = (value) => {
+      const trimmed = requiredTrimmed(value);
+      return !trimmed || this.isValidMediaLink(trimmed);
+    };
+
     return Boolean(
       project &&
         typeof project.id === 'string' &&
         project.id.length > 0 &&
         typeof project.title === 'string' &&
-        project.title.length > 0 &&
+        project.title.trim().length > 0 &&
         typeof project.slug === 'string' &&
         project.slug.length > 0 &&
         isValidSlug(project.slug) &&
@@ -1918,35 +1914,29 @@ class ContentService {
         Array.isArray(project.results) &&
         Array.isArray(project.tags) &&
         typeof project.mainImage === 'string' &&
+        isOptionalMediaLink(project.mainImage) &&
         typeof project.featuredImage === 'string' &&
-        (() => {
-          const mediaCandidates = [
-            project.mediaRoles?.cardImage,
-            project.mediaRoles?.heroImage,
-            project.cardImage,
-            project.heroImage,
-            project.featuredImage,
-            project.mainImage,
-            project.image,
-            project.imageUrl,
-            project.media,
-          ].filter((entry) => typeof entry === 'string' && entry.trim().length > 0);
-          return mediaCandidates.length > 0 && mediaCandidates.some((entry) => this.isValidMediaLink(entry));
-        })() &&
+        isOptionalMediaLink(project.featuredImage) &&
+        isOptionalMediaLink(project.image) &&
+        isOptionalMediaLink(project.imageUrl) &&
+        isOptionalMediaLink(project.media) &&
+        isOptionalMediaLink(project.cardImage) &&
+        isOptionalMediaLink(project.heroImage) &&
+        isOptionalMediaLink(project.featuredImage) &&
         typeof project.imageAlt === 'string' &&
         (project.mediaRoles === undefined ||
           (typeof project.mediaRoles === 'object' &&
-            (project.mediaRoles.cardImage === undefined || this.isValidMediaLink(project.mediaRoles.cardImage)) &&
-            (project.mediaRoles.heroImage === undefined || this.isValidMediaLink(project.mediaRoles.heroImage)) &&
-            (project.mediaRoles.coverImage === undefined || this.isValidMediaLink(project.mediaRoles.coverImage)) &&
-            (project.mediaRoles.socialImage === undefined || this.isValidMediaLink(project.mediaRoles.socialImage)) &&
-            (project.mediaRoles.galleryImages === undefined || (Array.isArray(project.mediaRoles.galleryImages) && project.mediaRoles.galleryImages.every((image) => this.isValidMediaLink(image)))))) &&
+            isOptionalMediaLink(project.mediaRoles.cardImage) &&
+            isOptionalMediaLink(project.mediaRoles.heroImage) &&
+            isOptionalMediaLink(project.mediaRoles.coverImage) &&
+            isOptionalMediaLink(project.mediaRoles.socialImage) &&
+            (project.mediaRoles.galleryImages === undefined || (Array.isArray(project.mediaRoles.galleryImages) && project.mediaRoles.galleryImages.every((image) => isOptionalMediaLink(image)))))) &&
         (project.seo === undefined ||
           (typeof project.seo === 'object' &&
             (project.seo.title === undefined || typeof project.seo.title === 'string') &&
             (project.seo.description === undefined || typeof project.seo.description === 'string') &&
             (project.seo.canonicalSlug === undefined || isValidSlug(project.seo.canonicalSlug)) &&
-            (project.seo.socialImage === undefined || this.isValidMediaLink(project.seo.socialImage)))) &&
+            isOptionalMediaLink(project.seo.socialImage))) &&
         (project.link === undefined || isValidOptionalHttpUrl(project.link)) &&
         (project.links === undefined ||
           (typeof project.links === 'object' &&
@@ -1958,7 +1948,7 @@ class ContentService {
             typeof project.testimonial.author === 'string' &&
             typeof project.testimonial.position === 'string')) &&
         Array.isArray(project.images) &&
-        project.images.every((image) => this.isValidMediaLink(image)) &&
+        project.images.every((image) => isOptionalMediaLink(image)) &&
         typeof project.ownerUserId === 'string' &&
         project.ownerUserId.trim().length > 0 &&
         typeof project.organizationId === 'string' &&

@@ -147,7 +147,7 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
     const publicPath = `${mediaFile.publicPath || mediaFile.path || ''}`.trim() || (filename ? `/uploads/${filename}` : '');
     return {
       id: mediaFile.id,
-      type: mediaFile.type || mediaFile.mediaType || 'file',
+      type: mediaFile.type || mediaFile.mediaType || 'document',
       name: mediaFile.name || mediaFile.label || filename,
       label: mediaFile.label || mediaFile.title || mediaFile.name || filename,
       filename,
@@ -557,7 +557,7 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       filename: stored.file.filename || uploadInput.filename,
       title: uploadInput.title || uploadInput.filename,
       label: uploadInput.title || uploadInput.filename,
-      type: stored.file.mediaType || ((stored.file.mimeType || '').startsWith('image/') ? 'image' : 'file'),
+      type: stored.file.mediaType || ((stored.file.mimeType || '').startsWith('image/') ? 'image' : (stored.file.mimeType || '').startsWith('video/') ? 'video' : 'document'),
       mimeType: stored.file.mimeType,
       publicPath: stored.file.publicPath,
       url: stored.file.publicUrl,
@@ -593,7 +593,7 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       entityId: stored.file.id,
       metadata: { mimeType: stored.file.mimeType, size: stored.file.size },
     }));
-    return sendSuccess(res, 201, { media: toCanonicalMedia(saved.mediaFile) });
+    return sendSuccess(res, 201, { mediaFile: toCanonicalMedia(saved.mediaFile), media: toCanonicalMedia(saved.mediaFile) });
   });
 
   router.post('/media', requirePermission(Permissions.CONTENT_WRITE), (req, res) => {
