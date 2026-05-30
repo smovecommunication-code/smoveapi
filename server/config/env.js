@@ -184,7 +184,7 @@ const DEFAULT_FRONTEND_ORIGIN =
   normalizeOrigin(process.env.VITE_PUBLIC_SITE_URL) ??
   FRONTEND_ORIGINS[0] ??
   `http://localhost:${FRONTEND_PORT}`;
-const DEFAULT_API_ORIGIN = normalizeOrigin(process.env.API_ORIGIN) ?? `http://localhost:${API_PORT}`;
+const DEFAULT_API_ORIGIN = normalizeOrigin(process.env.API_ORIGIN) ?? (isProduction ? 'https://smoveapi-1.onrender.com' : `http://localhost:${API_PORT}`);
 
 if (!SESSION_SECRET && !isProduction) {
   // eslint-disable-next-line no-console

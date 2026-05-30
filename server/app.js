@@ -216,11 +216,16 @@ function createApp(deps = {}) {
     return next();
   });
 
-  if (!fs.existsSync(MEDIA_UPLOAD_DIR)) {
-    fs.mkdirSync(MEDIA_UPLOAD_DIR, { recursive: true });
+  const uploadRoot = path.resolve(MEDIA_UPLOAD_DIR || 'server/data/uploads');
+  if (!fs.existsSync(uploadRoot)) {
+    fs.mkdirSync(uploadRoot, { recursive: true });
   }
-  app.use(MEDIA_PUBLIC_BASE_PATH, express.static(path.resolve(MEDIA_UPLOAD_DIR)));
-  app.use(`/api${MEDIA_PUBLIC_BASE_PATH}`, express.static(path.resolve(MEDIA_UPLOAD_DIR)));
+  const uploadStaticOptions = {
+    fallthrough: false,
+    maxAge: '7d',
+  };
+  app.use(MEDIA_PUBLIC_BASE_PATH, express.static(uploadRoot, uploadStaticOptions));
+  app.use(`/api${MEDIA_PUBLIC_BASE_PATH}`, express.static(uploadRoot, uploadStaticOptions));
   app.use(exposeCsrfToken);
 
   app.get('/', (_req, res) => {
@@ -275,13 +280,19 @@ function createApp(deps = {}) {
       return sendError(res, 403, 'ORIGIN_FORBIDDEN', 'Origin not allowed by CORS policy');
     }
 
+    if ((err?.status === 404 || err?.statusCode === 404) && (req.originalUrl.startsWith(MEDIA_PUBLIC_BASE_PATH) || req.originalUrl.startsWith(`/api${MEDIA_PUBLIC_BASE_PATH}`))) {
+      return sendError(res, 404, 'MEDIA_FILE_NOT_FOUND', 'Uploaded media file not found.');
+    }
+
     logError('api_unhandled_error', {
       requestId: req.requestId,
       path: req.originalUrl,
       method: req.method,
       message: err?.message,
     });
-    return sendError(res, 500, 'INTERNAL_ERROR', 'Unexpected error');
+    const status = Number(err?.status || err?.statusCode || 500);
+    const safeStatus = status >= 400 && status < 600 ? status : 500;
+    return sendError(res, safeStatus, safeStatus === 404 ? 'NOT_FOUND' : 'INTERNAL_ERROR', safeStatus === 404 ? 'Not found' : 'Unexpected error');
   });
 
   return app;

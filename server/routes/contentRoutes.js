@@ -5,7 +5,7 @@ const { sendSuccess, sendError } = require('../utils/apiResponse');
 const { logInfo, logWarn } = require('../utils/logger');
 const { API_ORIGIN } = require('../config/env');
 
-const { normalizeMediaReference, resolveMediaUrl } = require('../utils/mediaResolver');
+const { normalizeMediaReference, resolveMediaRecordUrl, resolveMediaUrl } = require('../utils/mediaResolver');
 
 function normalizeMediaPayload(payload, mediaFiles = [], apiOrigin = API_ORIGIN) {
   if (!payload || typeof payload !== 'object') return payload;
@@ -137,35 +137,30 @@ function parseMultipartFormData(req) {
 
 function createContentRoutes({ contentService, auditService, mediaStorage }) {
   const router = express.Router();
-  const absolutizeMediaUrl = (value) => {
-    const normalized = `${value || ''}`.trim();
-    if (!normalized) return '';
-    if (/^[a-zA-Z][a-zA-Z\d+.-]*:/.test(normalized) || normalized.startsWith('//')) return normalized;
-    if (!API_ORIGIN) return normalized;
-    if (normalized.startsWith('/')) return `${API_ORIGIN}${normalized}`;
-    return `${API_ORIGIN}/${normalized}`;
-  };
   const toCanonicalMedia = (mediaFile) => {
     if (!mediaFile || typeof mediaFile !== 'object') return null;
     const metadata = mediaFile.metadata && typeof mediaFile.metadata === 'object'
       ? Object.fromEntries(Object.entries(mediaFile.metadata).map(([key, value]) => [key, typeof value === 'string' ? value : String(value ?? '')]))
       : {};
-    const filename = `${mediaFile.filename || mediaFile.name || ''}`.trim();
-    const publicPath = `${mediaFile.publicPath || mediaFile.path || ''}`.trim() || (filename ? `/uploads/${filename}` : '');
+    const filename = `${mediaFile.filename || ''}`.trim();
+    const legacyUploadPath = `${mediaFile.url || mediaFile.publicUrl || mediaFile.thumbnailUrl || ''}`.trim();
+    const publicPath = `${mediaFile.publicPath || ''}`.trim() || (legacyUploadPath.startsWith('/uploads/') || legacyUploadPath.startsWith('uploads/') ? legacyUploadPath : '') || (filename ? `/uploads/${filename}` : '');
+    const resolvedUrl = resolveMediaRecordUrl({ ...mediaFile, filename, publicPath }, { apiOrigin: API_ORIGIN });
     return {
       id: mediaFile.id,
       type: mediaFile.type || mediaFile.mediaType || 'document',
-      name: mediaFile.name || mediaFile.label || filename,
-      label: mediaFile.label || mediaFile.title || mediaFile.name || filename,
+      name: mediaFile.name || mediaFile.label || filename || mediaFile.id,
+      label: mediaFile.label || mediaFile.title || mediaFile.name || filename || mediaFile.id,
       filename,
+      path: mediaFile.path || mediaFile.storagePath || '',
       mimeType: mediaFile.mimeType || mediaFile.metadata?.mimeType || '',
       size: Number(mediaFile.size || 0),
-      url: absolutizeMediaUrl(mediaFile.url || mediaFile.publicUrl || publicPath),
+      url: resolvedUrl,
       publicPath,
       alt: mediaFile.alt || '',
       caption: mediaFile.caption || '',
       tags: Array.isArray(mediaFile.tags) ? mediaFile.tags : [],
-      thumbnailUrl: absolutizeMediaUrl(mediaFile.thumbnailUrl || mediaFile.url || mediaFile.publicUrl || publicPath),
+      thumbnailUrl: resolvedUrl,
       uploadedDate: mediaFile.uploadedDate || mediaFile.createdAt || new Date().toISOString(),
       uploadedBy: mediaFile.uploadedBy || mediaFile.ownerUserId || 'system',
       source: mediaFile.source || 'content-store',
