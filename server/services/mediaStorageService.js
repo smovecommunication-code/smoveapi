@@ -73,6 +73,8 @@ class LocalDiskMediaStorage {
         mimeType,
         size: buffer.length,
         storagePath: fullPath,
+        filename: relativePath,
+        publicPath: `${this.publicBasePath}/${relativePath}`,
         publicUrl: `${this.publicBasePath}/${relativePath}`,
         checksumSha256: crypto.createHash('sha256').update(buffer).digest('hex'),
       },

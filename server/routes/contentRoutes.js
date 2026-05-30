@@ -5,11 +5,15 @@ const { sendSuccess, sendError } = require('../utils/apiResponse');
 const { logInfo, logWarn } = require('../utils/logger');
 const { API_ORIGIN } = require('../config/env');
 
-const { normalizeMediaReference } = require('../utils/mediaResolver');
+const { normalizeMediaReference, resolveMediaUrl } = require('../utils/mediaResolver');
 
-function normalizeMediaPayload(payload, mediaFiles = [], apiOrigin = '') {
+function normalizeMediaPayload(payload, mediaFiles = [], apiOrigin = API_ORIGIN) {
   if (!payload || typeof payload !== 'object') return payload;
-  const normalizeValue = (value) => normalizeMediaReference(value, { apiOrigin, allowIdOnly: true }) || (typeof value === 'string' ? value.trim() : value);
+  const normalizeValue = (value) => {
+    const resolved = resolveMediaUrl(value, mediaFiles, { apiOrigin });
+    if (resolved) return resolved;
+    return normalizeMediaReference(value, { apiOrigin, allowIdOnly: true }) || (typeof value === 'string' ? value.trim() : value);
+  };
   const walk = (node, key = '') => {
     if (Array.isArray(node)) return node.map((entry) => walk(entry, key));
     if (!node || typeof node !== 'object') return node;

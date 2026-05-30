@@ -33,6 +33,12 @@ function normalizeMediaReference(value, options = {}) {
 }
 
 function resolveMediaUrl(value, mediaFiles = [], options = {}) {
+  if (value && typeof value === 'object') {
+    const candidate = value;
+    const direct = candidate.url || candidate.publicUrl || candidate.publicPath || (candidate.filename ? `/uploads/${candidate.filename}` : '');
+    return direct ? absolutizePath(direct, options.apiOrigin || '') : '';
+  }
+
   const normalized = `${value || ''}`.trim();
   if (!normalized) return '';
 
