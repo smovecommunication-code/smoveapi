@@ -142,6 +142,10 @@ class FileContentRepository {
     writeState(state);
   }
 
+  flushWrites() {
+    return Promise.resolve();
+  }
+
   getBlogPosts() {
     return readState().blogPosts;
   }

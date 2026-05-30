@@ -174,6 +174,21 @@ describe('ContentService project persistence', () => {
     expect(new Set(second.map((project) => project.id)).size).toBe(second.length);
   });
 
+  it('creates title-only projects as published records visible to protected and public lists', () => {
+    const service = new ContentService({ contentRepository: new MemoryContentRepository({ projects: [], mediaFiles: [] }) });
+
+    const created = service.saveProject({ title: 'Projet titre seul' }, { userId: 'admin-1', organizationId: 'org_default' });
+
+    expect(created.ok).toBe(true);
+    expect(created.project.id).toBeTruthy();
+    expect(created.project.slug).toBe('projet-titre-seul');
+    expect(created.project.status).toBe('published');
+    expect(created.project.archived).toBe(false);
+    expect(created.project.deleted).toBe(false);
+    expect(service.listProjects({ organizationId: 'org_default' }).some((project) => project.id === created.project.id)).toBe(true);
+    expect(service.listProjects().filter((project) => project.status === 'published' && project.title.trim()).some((project) => project.id === created.project.id)).toBe(true);
+  });
+
   it('creates and updates projects with normalized slug/status contract', () => {
     const service = new ContentService({ contentRepository: new MemoryContentRepository() });
 

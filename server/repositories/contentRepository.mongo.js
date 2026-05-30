@@ -72,17 +72,28 @@ class MongoContentRepository {
     };
 
     const payload = this.getState();
-    this.writeChain = this.writeChain
-      .then(() =>
-        this.ContentStateModel.updateOne(
-          { key: STATE_KEY },
-          { $set: payload },
-          { upsert: true },
-        ).exec(),
-      )
-      .catch((error) => {
-        logError('content_state_persist_failed', { message: error?.message });
-      });
+    const previousWrites = this.writeChain.catch((error) => {
+      logError('content_state_previous_persist_failed', { message: error?.message });
+    });
+
+    this.writeChain = previousWrites.then(() =>
+      this.ContentStateModel.updateOne(
+        { key: STATE_KEY },
+        { $set: payload },
+        { upsert: true },
+      ).exec(),
+    );
+
+    this.writeChain.catch((error) => {
+      logError('content_state_persist_failed', { message: error?.message });
+    });
+
+    return this.writeChain;
+  }
+
+  flushWrites() {
+    this.ensureInitialized();
+    return this.writeChain;
   }
 
   getBlogPosts() {

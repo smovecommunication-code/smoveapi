@@ -32,6 +32,7 @@ function createContentService(overrides = {}) {
     getBlogTaxonomy: () => ({ categories: [], tags: [] }),
     getPublicSettings: () => ({}),
     getPageContent: () => ({}),
+    getPublicPageContent: () => ({}),
     listMediaFiles: () => [],
     getSyncDiagnostics: () => ({}),
     getContentHealthSummary: () => ({}),
@@ -109,6 +110,7 @@ it('serves public page-content and media without authentication guards', () => {
     const router = createContentRoutes({
       contentService: createContentService({
         getPageContent: () => ({ home: { heroBadge: 'Public hero' } }),
+        getPublicPageContent: () => ({ home: { heroBadge: 'Public hero' } }),
         listMediaFiles: () => [{ id: 'hero-1', url: 'https://cdn.example.com/hero-1.jpg' }],
       }),
     });
@@ -173,5 +175,76 @@ it('serves public page-content and media without authentication guards', () => {
 
     expect(res.statusCode).toBe(405);
     expect(res.headers.Allow).toBe('GET, POST');
+  });
+});
+
+describe('content project mutation routes', () => {
+  it('returns the created project only after it is visible in the persisted project list', async () => {
+    const createdProject = {
+      id: 'project-created-1',
+      title: 'Created Project',
+      slug: 'created-project',
+      status: 'published',
+    };
+    const router = createContentRoutes({
+      contentService: createContentService({
+        saveProject: () => ({ ok: true, project: createdProject }),
+        flushWrites: async () => undefined,
+        findProjectById: () => createdProject,
+      }),
+      auditService: { record: () => undefined },
+    });
+
+    const postProjectHandler = router.stack.find((layer) => layer.route?.path === '/projects' && layer.route.methods?.post)?.route.stack.at(-1).handle;
+    const res = createRes();
+
+    await postProjectHandler({
+      body: { title: 'Created Project' },
+      appUser: { id: 'admin-1', role: 'admin', organizationId: 'org_default' },
+      session: { userId: 'admin-1', role: 'admin', organizationId: 'org_default' },
+      requestId: 'req-project-create',
+      ip: '127.0.0.1',
+      method: 'POST',
+      originalUrl: '/api/v1/content/projects',
+    }, res);
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body?.data?.project).toEqual(createdProject);
+  });
+
+  it('does not report success when the created project is absent after persistence', async () => {
+    const router = createContentRoutes({
+      contentService: createContentService({
+        saveProject: () => ({
+          ok: true,
+          project: {
+            id: 'project-missing-after-save',
+            title: 'Missing Project',
+            slug: 'missing-project',
+            status: 'published',
+          },
+        }),
+        flushWrites: async () => undefined,
+        findProjectById: () => null,
+      }),
+      auditService: { record: () => undefined },
+    });
+
+    const postProjectHandler = router.stack.find((layer) => layer.route?.path === '/projects' && layer.route.methods?.post)?.route.stack.at(-1).handle;
+    const res = createRes();
+
+    await postProjectHandler({
+      body: { title: 'Missing Project' },
+      appUser: { id: 'admin-1', role: 'admin', organizationId: 'org_default' },
+      session: { userId: 'admin-1', role: 'admin', organizationId: 'org_default' },
+      requestId: 'req-project-create-missing',
+      ip: '127.0.0.1',
+      method: 'POST',
+      originalUrl: '/api/v1/content/projects',
+    }, res);
+
+    expect(res.statusCode).toBe(500);
+    expect(res.body?.success).toBe(false);
+    expect(res.body?.error?.code).toBe('PROJECT_RESPONSE_INVALID');
   });
 });
