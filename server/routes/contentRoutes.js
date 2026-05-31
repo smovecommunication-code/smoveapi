@@ -5,7 +5,7 @@ const { sendSuccess, sendError } = require('../utils/apiResponse');
 const { logInfo, logWarn } = require('../utils/logger');
 const { API_ORIGIN } = require('../config/env');
 
-const { normalizeMediaReference, resolveMediaRecordUrl, resolveMediaUrl } = require('../utils/mediaResolver');
+const { normalizeMediaReference, resolveMediaRecordUrl, resolveMediaUrl, extractUploadPublicPath } = require('../utils/mediaResolver');
 
 function normalizeMediaPayload(payload, mediaFiles = [], apiOrigin = API_ORIGIN) {
   if (!payload || typeof payload !== 'object') return payload;
@@ -142,16 +142,19 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
     const metadata = mediaFile.metadata && typeof mediaFile.metadata === 'object'
       ? Object.fromEntries(Object.entries(mediaFile.metadata).map(([key, value]) => [key, typeof value === 'string' ? value : String(value ?? '')]))
       : {};
-    const filename = `${mediaFile.filename || ''}`.trim();
-    const legacyUploadPath = `${mediaFile.url || mediaFile.publicUrl || mediaFile.thumbnailUrl || ''}`.trim();
-    const publicPath = `${mediaFile.publicPath || ''}`.trim() || (legacyUploadPath.startsWith('/uploads/') || legacyUploadPath.startsWith('uploads/') ? legacyUploadPath : '') || (filename ? `/uploads/${filename}` : '');
+    const rawFilename = `${mediaFile.filename || mediaFile.originalName || mediaFile.name || ''}`.trim();
+    const extractedPath = extractUploadPublicPath(mediaFile.publicPath || mediaFile.url || mediaFile.publicUrl || mediaFile.thumbnailUrl || mediaFile.path || mediaFile.storagePath || rawFilename);
+    const filename = rawFilename.replace(/^\/?uploads\//, '') || extractedPath.replace(/^\/uploads\//, '');
+    const publicPath = `${mediaFile.publicPath || ''}`.trim() || extractedPath || (filename ? `/uploads/${filename}` : '');
     const resolvedUrl = resolveMediaRecordUrl({ ...mediaFile, filename, publicPath }, { apiOrigin: API_ORIGIN });
+    const canonicalType = mediaFile.type === 'document' ? 'file' : (mediaFile.type || mediaFile.mediaType || 'file');
     return {
       id: mediaFile.id,
-      type: mediaFile.type || mediaFile.mediaType || 'document',
-      name: mediaFile.name || mediaFile.label || filename || mediaFile.id,
+      type: canonicalType,
+      name: mediaFile.name || mediaFile.label || mediaFile.originalName || filename || mediaFile.id,
       label: mediaFile.label || mediaFile.title || mediaFile.name || filename || mediaFile.id,
       filename,
+      originalName: mediaFile.originalName || mediaFile.name || filename,
       path: mediaFile.path || mediaFile.storagePath || '',
       mimeType: mediaFile.mimeType || mediaFile.metadata?.mimeType || '',
       size: Number(mediaFile.size || 0),
@@ -598,10 +601,11 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
     const mediaPayload = {
       id: stored.file.id,
       name: uploadInput.filename,
+      originalName: uploadInput.filename,
       filename: stored.file.filename || uploadInput.filename,
       title: uploadInput.title || uploadInput.filename,
       label: uploadInput.title || uploadInput.filename,
-      type: stored.file.mediaType || ((stored.file.mimeType || '').startsWith('image/') ? 'image' : (stored.file.mimeType || '').startsWith('video/') ? 'video' : 'document'),
+      type: stored.file.mediaType || ((stored.file.mimeType || '').startsWith('image/') ? 'image' : (stored.file.mimeType || '').startsWith('video/') ? 'video' : 'file'),
       mimeType: stored.file.mimeType,
       publicPath: stored.file.publicPath,
       url: stored.file.publicUrl,
@@ -666,7 +670,7 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       const statusCode = result.error.code === 'MEDIA_NOT_FOUND' ? 404 : 400;
       return sendError(res, statusCode, result.error.code, result.error.message);
     }
-    return sendSuccess(res, 200, { mediaFile: result.mediaFile, replaced: true });
+    return sendSuccess(res, 200, { mediaFile: toCanonicalMedia(result.mediaFile), replaced: true });
   });
 
   router.post('/media/:id/restore', requirePermission(Permissions.CONTENT_WRITE), (req, res) => {
@@ -675,7 +679,7 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       const statusCode = restored.error.code === 'MEDIA_NOT_FOUND' ? 404 : 400;
       return sendError(res, statusCode, restored.error.code, restored.error.message);
     }
-    return sendSuccess(res, 200, { restored: restored.restored, mediaFile: restored.mediaFile });
+    return sendSuccess(res, 200, { restored: restored.restored, mediaFile: toCanonicalMedia(restored.mediaFile) });
   });
 
   router.delete('/media/:id', requirePermission(Permissions.CONTENT_WRITE), (req, res) => {
@@ -695,7 +699,7 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       return sendError(res, statusCode, archived.error.code, archived.error.message);
     }
     auditService?.record(toAuditContext(req, 'cms_media_delete', 'success', { entityType: 'media_asset', entityId: req.params.id }));
-    return sendSuccess(res, 200, { deleted: false, archived: true, mediaFile: archived.mediaFile });
+    return sendSuccess(res, 200, { deleted: false, archived: true, mediaFile: toCanonicalMedia(archived.mediaFile) });
   });
 
   router.get('/page-content', requirePermission(Permissions.CONTENT_READ), (req, res) =>

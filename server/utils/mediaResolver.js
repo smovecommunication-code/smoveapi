@@ -36,11 +36,26 @@ function isForbiddenRenderableValue(value) {
   );
 }
 
+
+function extractUploadPublicPath(value) {
+  const normalized = `${value || ''}`.trim().replace(/\\/g, '/');
+  if (!normalized) return '';
+  const uploadsIndex = normalized.lastIndexOf('/uploads/');
+  if (uploadsIndex >= 0) return normalized.slice(uploadsIndex);
+  const dataUploadsIndex = normalized.lastIndexOf('data/uploads/');
+  if (dataUploadsIndex >= 0) return `/uploads/${normalized.slice(dataUploadsIndex + 'data/uploads/'.length)}`;
+  const bareUploadsIndex = normalized.indexOf('uploads/');
+  if (bareUploadsIndex === 0) return `/${normalized}`;
+  return '';
+}
+
 function absolutizePath(value, apiOrigin) {
   const normalized = `${value || ''}`.trim();
-  if (isForbiddenRenderableValue(normalized)) return '';
   if (HTTP_URL_PATTERN.test(normalized)) return normalized;
+  const extractedPath = extractUploadPublicPath(normalized);
   const origin = toApiOrigin(apiOrigin);
+  if (extractedPath) return `${origin}${extractedPath}`;
+  if (isForbiddenRenderableValue(normalized)) return '';
   if (normalized.startsWith('/uploads/')) return `${origin}${normalized}`;
   if (normalized.startsWith('uploads/')) return `${origin}/${normalized}`;
   return '';
@@ -52,11 +67,11 @@ function resolveMediaRecordUrl(mediaFile, options = {}) {
   const url = `${mediaFile.url || mediaFile.publicUrl || ''}`.trim();
   if (HTTP_URL_PATTERN.test(url)) return url;
 
-  const publicPath = `${mediaFile.publicPath || ''}`.trim();
+  const publicPath = `${mediaFile.publicPath || ''}`.trim() || extractUploadPublicPath(mediaFile.path || mediaFile.storagePath || mediaFile.url || mediaFile.publicUrl || mediaFile.thumbnailUrl || mediaFile.filename);
   if (publicPath.startsWith('/uploads/')) return `${toApiOrigin(options.apiOrigin)}${publicPath}`;
   if (publicPath.startsWith('uploads/')) return `${toApiOrigin(options.apiOrigin)}/${publicPath}`;
 
-  const filename = `${mediaFile.filename || ''}`.trim();
+  const filename = `${mediaFile.filename || ''}`.trim().replace(/^uploads\//, '');
   if (filename && !isForbiddenRenderableValue(filename)) return `${toApiOrigin(options.apiOrigin)}/uploads/${filename.replace(/^\/+/, '')}`;
 
   return '';
@@ -103,4 +118,4 @@ function resolveMediaUrl(value, mediaFiles = [], options = {}) {
   return '';
 }
 
-module.exports = { resolveMediaUrl, resolveMediaRecordUrl, normalizeMediaReference, absolutizePath };
+module.exports = { resolveMediaUrl, resolveMediaRecordUrl, normalizeMediaReference, absolutizePath, extractUploadPublicPath };

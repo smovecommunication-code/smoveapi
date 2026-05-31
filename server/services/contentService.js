@@ -2113,7 +2113,8 @@ class ContentService {
   }
 
   normalizeMediaFile(file) {
-    const normalizedName = (file?.name || '').trim();
+    const normalizedFilename = requiredTrimmed(file?.filename) || requiredTrimmed(file?.originalName) || requiredTrimmed(file?.name);
+    const normalizedName = (file?.name || file?.originalName || normalizedFilename || file?.id || '').trim();
     const normalizedAlt = (file?.alt || '').trim() || normalizedName;
     const nowIso = new Date().toISOString();
 
@@ -2143,6 +2144,9 @@ class ContentService {
     return {
       ...file,
       name: normalizedName,
+      filename: normalizedFilename,
+      originalName: requiredTrimmed(file?.originalName) || normalizedName,
+      mimeType: requiredTrimmed(file?.mimeType) || requiredTrimmed(file?.metadata?.mimeType),
       title: (file?.title || '').trim() || normalizedName,
       label: (file?.label || '').trim() || normalizedName,
       alt: normalizedAlt,
@@ -2261,7 +2265,7 @@ class ContentService {
     if (lower.startsWith('data:video/')) return 'video';
     if (/\.(png|jpe?g|gif|webp|svg|avif)(\?|#|$)/.test(lower)) return 'image';
     if (/\.(mp4|webm|mov|avi)(\?|#|$)/.test(lower)) return 'video';
-    return 'document';
+    return 'file';
   }
 
   estimateMediaSize(link) {

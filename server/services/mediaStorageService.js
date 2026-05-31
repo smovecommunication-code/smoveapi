@@ -5,7 +5,7 @@ const crypto = require('crypto');
 function inferMediaType(mimeType = '') {
   if (mimeType.startsWith('image/')) return 'image';
   if (mimeType.startsWith('video/')) return 'video';
-  return 'document';
+  return 'file';
 }
 
 function sanitizeFilename(filename = '') {
