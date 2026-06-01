@@ -162,6 +162,8 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       publicPath,
       alt: mediaFile.alt || '',
       caption: mediaFile.caption || '',
+      width: typeof mediaFile.width === 'number' ? mediaFile.width : undefined,
+      height: typeof mediaFile.height === 'number' ? mediaFile.height : undefined,
       tags: Array.isArray(mediaFile.tags) ? mediaFile.tags : [],
       thumbnailUrl: resolvedUrl,
       uploadedDate: mediaFile.uploadedDate || mediaFile.createdAt || new Date().toISOString(),

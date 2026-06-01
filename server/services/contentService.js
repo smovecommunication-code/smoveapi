@@ -1008,8 +1008,8 @@ class ContentService {
   listMediaFiles(options = {}) {
     const includeArchived = Boolean(options.includeArchived);
     return this.readState().mediaFiles
-      .filter((file) => this.validateMediaFile(file))
       .map((file) => this.normalizeMediaFile(file))
+      .filter((file) => this.validateMediaFile(file))
       .filter((file) => includeArchived || !file.archivedAt);
   }
 
@@ -2113,62 +2113,80 @@ class ContentService {
   }
 
   normalizeMediaFile(file) {
-    const normalizedFilename = requiredTrimmed(file?.filename) || requiredTrimmed(file?.originalName) || requiredTrimmed(file?.name);
-    const normalizedName = (file?.name || file?.originalName || normalizedFilename || file?.id || '').trim();
-    const normalizedAlt = (file?.alt || '').trim() || normalizedName;
     const nowIso = new Date().toISOString();
+    const safeFile = file && typeof file === 'object' ? file : {};
+    const rawType = requiredTrimmed(safeFile.type || safeFile.mediaType).toLowerCase();
+    const normalizedType = rawType === 'document' ? 'file' : (MEDIA_TYPES.has(rawType) ? rawType : this.inferMediaTypeFromLink(safeFile.url || safeFile.publicPath || safeFile.filename || safeFile.originalName));
+
+    const extractUploadPath = (value) => {
+      const normalized = requiredTrimmed(value).replace(/\\/g, '/');
+      if (!normalized) return '';
+      const uploadsIndex = normalized.lastIndexOf('/uploads/');
+      if (uploadsIndex >= 0) return normalized.slice(uploadsIndex);
+      const dataUploadsIndex = normalized.lastIndexOf('data/uploads/');
+      if (dataUploadsIndex >= 0) return `/uploads/${normalized.slice(dataUploadsIndex + 'data/uploads/'.length)}`;
+      if (normalized.startsWith('uploads/')) return `/${normalized}`;
+      return '';
+    };
+
+    const explicitFilename = requiredTrimmed(safeFile.filename) || requiredTrimmed(safeFile.originalName);
+    const extractedPath = extractUploadPath(safeFile.publicPath || safeFile.url || safeFile.publicUrl || safeFile.thumbnailUrl || safeFile.path || safeFile.storagePath || explicitFilename || safeFile.name);
+    const rawFilename = explicitFilename || extractedPath || requiredTrimmed(safeFile.name);
+    const normalizedFilename = rawFilename.replace(/^\/?uploads\//, '') || extractedPath.replace(/^\/uploads\//, '');
+    const normalizedName = requiredTrimmed(safeFile.name || safeFile.label || safeFile.title || safeFile.originalName || normalizedFilename || safeFile.id) || 'media-file';
+    const normalizedAlt = requiredTrimmed(safeFile.alt) || normalizedName;
 
     const absolutizeMediaUrl = (value) => {
       const normalized = requiredTrimmed(value);
       if (!normalized) return '';
-      if (HTTP_SCHEME_PATTERN.test(normalized) || normalized.startsWith('//') || normalized.startsWith('data:')) {
-        return normalized;
-      }
-      if (normalized.startsWith('/')) {
-        return `${API_ORIGIN}${normalized}`;
-      }
-      if (normalized.startsWith('uploads/') || normalized.startsWith('media/')) {
-        return `${API_ORIGIN}/${normalized}`;
-      }
-      return normalized;
+      if (HTTP_SCHEME_PATTERN.test(normalized) || normalized.startsWith('//') || normalized.startsWith('data:')) return normalized;
+      const path = extractUploadPath(normalized);
+      if (path) return `${API_ORIGIN}${path}`;
+      if (normalized.startsWith('/')) return `${API_ORIGIN}${normalized}`;
+      if (normalized.startsWith('uploads/') || normalized.startsWith('media/')) return `${API_ORIGIN}/${normalized}`;
+      return '';
     };
 
-    const normalizedUrl = absolutizeMediaUrl(file?.url);
-    const normalizedThumbnailUrl = absolutizeMediaUrl((file?.thumbnailUrl || '').trim() || normalizedUrl);
-    const normalizedVariants = this.normalizeMediaVariants(file?.variants, {
-      ...file,
+    const publicPath = requiredTrimmed(safeFile.publicPath) || extractedPath || (normalizedFilename ? `/uploads/${normalizedFilename}` : '');
+    const normalizedUrl = absolutizeMediaUrl(safeFile.url || safeFile.publicUrl || publicPath || normalizedFilename);
+    const normalizedThumbnailUrl = absolutizeMediaUrl(safeFile.thumbnailUrl || normalizedUrl || publicPath);
+    const normalizedVariants = this.normalizeMediaVariants(safeFile.variants, {
+      ...safeFile,
       url: normalizedUrl,
       thumbnailUrl: normalizedThumbnailUrl,
     });
 
     return {
-      ...file,
+      ...safeFile,
+      id: requiredTrimmed(safeFile.id) || `media_${crypto.randomUUID()}`,
+      type: normalizedType,
       name: normalizedName,
       filename: normalizedFilename,
-      originalName: requiredTrimmed(file?.originalName) || normalizedName,
-      mimeType: requiredTrimmed(file?.mimeType) || requiredTrimmed(file?.metadata?.mimeType),
-      title: (file?.title || '').trim() || normalizedName,
-      label: (file?.label || '').trim() || normalizedName,
+      originalName: requiredTrimmed(safeFile.originalName) || normalizedName,
+      mimeType: requiredTrimmed(safeFile.mimeType) || requiredTrimmed(safeFile.metadata?.mimeType),
+      title: requiredTrimmed(safeFile.title) || normalizedName,
+      label: requiredTrimmed(safeFile.label) || requiredTrimmed(safeFile.title) || normalizedName,
       alt: normalizedAlt,
-      caption: (file?.caption || '').trim() || normalizedAlt,
-      tags: Array.isArray(file?.tags) ? file.tags.map((tag) => `${tag}`.trim()).filter(Boolean) : [],
-      source: (file?.source || '').trim() || 'content-api',
+      caption: requiredTrimmed(safeFile.caption) || normalizedAlt,
+      width: typeof safeFile.width === 'number' && safeFile.width >= 0 ? safeFile.width : undefined,
+      height: typeof safeFile.height === 'number' && safeFile.height >= 0 ? safeFile.height : undefined,
+      tags: Array.isArray(safeFile.tags) ? safeFile.tags.map((tag) => `${tag}`.trim()).filter(Boolean) : [],
+      source: requiredTrimmed(safeFile.source) || 'content-api',
       metadata: {
-        ...(file?.metadata && typeof file.metadata === 'object' ? file.metadata : {}),
-        license: typeof file?.metadata?.license === 'string' ? file.metadata.license.trim() : '',
-        focalPoint: typeof file?.metadata?.focalPoint === 'string' ? file.metadata.focalPoint.trim() : '',
+        ...(safeFile.metadata && typeof safeFile.metadata === 'object' ? safeFile.metadata : {}),
+        license: typeof safeFile.metadata?.license === 'string' ? safeFile.metadata.license.trim() : '',
+        focalPoint: typeof safeFile.metadata?.focalPoint === 'string' ? safeFile.metadata.focalPoint.trim() : '',
       },
       url: normalizedUrl,
       variants: normalizedVariants,
-      thumbnailUrl: normalizedThumbnailUrl,
-      publicPath: (() => {
-        const candidate = requiredTrimmed(file?.publicPath);
-        if (candidate) return candidate;
-        if (normalizedUrl.startsWith(API_ORIGIN)) return normalizedUrl.slice(API_ORIGIN.length);
-        return candidate;
-      })(),
-      createdAt: file?.createdAt || file?.uploadedDate || nowIso,
+      thumbnailUrl: normalizedThumbnailUrl || normalizedUrl,
+      publicPath,
+      size: Number.isFinite(Number(safeFile.size)) && Number(safeFile.size) >= 0 ? Number(safeFile.size) : 0,
+      uploadedDate: safeFile.uploadedDate || safeFile.createdAt || nowIso,
+      uploadedBy: requiredTrimmed(safeFile.uploadedBy || safeFile.ownerUserId) || 'system',
+      createdAt: safeFile.createdAt || safeFile.uploadedDate || nowIso,
       updatedAt: nowIso,
+      archivedAt: typeof safeFile.archivedAt === 'string' ? safeFile.archivedAt : null,
     };
   }
 
