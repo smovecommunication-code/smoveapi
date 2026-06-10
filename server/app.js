@@ -10,6 +10,11 @@ const {
   FRONTEND_ORIGIN,
   API_ORIGIN,
   isProduction,
+  MEDIA_STORAGE_DRIVER,
+  CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET,
+  CLOUDINARY_UPLOAD_FOLDER,
   MEDIA_UPLOAD_DIR,
   MEDIA_PUBLIC_BASE_PATH,
   MEDIA_MAX_UPLOAD_BYTES,
@@ -33,7 +38,7 @@ const { createOAuthConfig } = require('./config/passport');
 const { FileAuditRepository } = require('./repositories/auditRepository.file');
 const { AuditService } = require('./services/auditService');
 const { setAuthAuditService } = require('./utils/authLogger');
-const { LocalDiskMediaStorage } = require('./services/mediaStorageService');
+const { createMediaStorage } = require('./services/mediaStorageService');
 const { EmailService } = require('./services/emailService');
 const { MongoContactSubmissionRepository } = require('./repositories/contactSubmissionRepository.mongo');
 const { ContactService } = require('./services/contactService');
@@ -102,7 +107,12 @@ function createApp(deps = {}) {
 
   const mediaStorage =
     deps.mediaStorage ??
-    new LocalDiskMediaStorage({
+    createMediaStorage({
+      driver: MEDIA_STORAGE_DRIVER,
+      cloudName: CLOUDINARY_CLOUD_NAME,
+      apiKey: CLOUDINARY_API_KEY,
+      apiSecret: CLOUDINARY_API_SECRET,
+      uploadFolder: CLOUDINARY_UPLOAD_FOLDER,
       uploadRootDir: MEDIA_UPLOAD_DIR,
       publicBasePath: MEDIA_PUBLIC_BASE_PATH,
       maxUploadBytes: MEDIA_MAX_UPLOAD_BYTES,

@@ -24,3 +24,17 @@ Local development origins are always allowed:
 - `npm install`
 - `npm run dev`
 - `npm start`
+
+## Cloudinary media storage
+
+Production media uploads use Cloudinary as the source of truth. Configure the API service with:
+
+```env
+MEDIA_STORAGE_DRIVER=cloudinary
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+CLOUDINARY_UPLOAD_FOLDER=smove
+```
+
+The API uploads binaries directly to Cloudinary and stores the returned secure URL, public ID, asset ID, dimensions, resource type, and editorial metadata in the MongoDB-backed content state. CMS and public-site consumers resolve the stored secure URL through the shared media contract. Deletion remains reference-protected; once unused, deleting an asset destroys it in Cloudinary and removes its MongoDB media record. Existing `/uploads` URLs remain resolvable only as legacy compatibility paths and are not used for new production uploads.

@@ -85,6 +85,11 @@ const CONTENT_SCHEMA_VERSION = parseIntOrDefault(process.env.CONTENT_SCHEMA_VERS
 const MEDIA_UPLOAD_DIR = process.env.MEDIA_UPLOAD_DIR ?? path.resolve(API_SERVER_ROOT, 'data/uploads');
 const MEDIA_PUBLIC_BASE_PATH = process.env.MEDIA_PUBLIC_BASE_PATH ?? '/uploads';
 const MEDIA_MAX_UPLOAD_BYTES = parseIntOrDefault(process.env.MEDIA_MAX_UPLOAD_BYTES, 5 * 1024 * 1024);
+const MEDIA_STORAGE_DRIVER = (process.env.MEDIA_STORAGE_DRIVER || (isProduction ? 'cloudinary' : 'local')).trim().toLowerCase();
+const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME ?? '';
+const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY ?? '';
+const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET ?? '';
+const CLOUDINARY_UPLOAD_FOLDER = process.env.CLOUDINARY_UPLOAD_FOLDER ?? 'smove';
 const MEDIA_ALLOWED_MIME_TYPES = (process.env.MEDIA_ALLOWED_MIME_TYPES ?? 'image/jpeg,image/png,image/webp,image/gif,video/mp4,application/pdf')
   .split(',')
   .map((entry) => entry.trim())
@@ -121,6 +126,14 @@ function validateCriticalEnv() {
 
   if (isProduction && SESSION_STORE_MODE !== 'mongo') {
     throw new Error('SESSION_STORE_MODE must be set to "mongo" in production.');
+  }
+
+  if (!['local', 'local-disk', 'cloudinary'].includes(MEDIA_STORAGE_DRIVER)) {
+    throw new Error('MEDIA_STORAGE_DRIVER must be "cloudinary" or "local".');
+  }
+
+  if (MEDIA_STORAGE_DRIVER === 'cloudinary' && !(CLOUDINARY_CLOUD_NAME && CLOUDINARY_API_KEY && CLOUDINARY_API_SECRET)) {
+    throw new Error('CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are required when MEDIA_STORAGE_DRIVER=cloudinary.');
   }
 
   if (process.env.RESEND_API_KEY && !process.env.EMAIL_FROM) {
@@ -232,6 +245,11 @@ module.exports = {
   CONTACT_TO_EMAIL: process.env.CONTACT_TO_EMAIL ?? '',
   APP_BASE_URL: process.env.APP_BASE_URL ?? DEFAULT_FRONTEND_ORIGIN,
   CONTENT_SCHEMA_VERSION,
+  MEDIA_STORAGE_DRIVER,
+  CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET,
+  CLOUDINARY_UPLOAD_FOLDER,
   MEDIA_UPLOAD_DIR,
   MEDIA_PUBLIC_BASE_PATH,
   MEDIA_MAX_UPLOAD_BYTES,

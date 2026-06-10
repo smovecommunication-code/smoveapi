@@ -160,6 +160,12 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       size: Number(mediaFile.size || 0),
       url: resolvedUrl,
       publicPath,
+      storageDriver: mediaFile.storageDriver || mediaFile.metadata?.storageDriver || (resolvedUrl.includes('res.cloudinary.com') ? 'cloudinary' : 'local-disk'),
+      publicId: mediaFile.publicId || mediaFile.metadata?.publicId || '',
+      assetId: mediaFile.assetId || mediaFile.metadata?.assetId || '',
+      resourceType: mediaFile.resourceType || mediaFile.metadata?.resourceType || '',
+      width: Number(mediaFile.width || mediaFile.metadata?.width || 0) || undefined,
+      height: Number(mediaFile.height || mediaFile.metadata?.height || 0) || undefined,
       alt: mediaFile.alt || '',
       caption: mediaFile.caption || '',
       width: typeof mediaFile.width === 'number' ? mediaFile.width : undefined,
@@ -565,7 +571,7 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
   router.post('/media/upload', requirePermission(Permissions.CONTENT_WRITE), express.raw({ type: (req) => (req.headers['content-type'] || '').includes('multipart/form-data'), limit: '30mb' }), (req, res, next) => {
     if ((req.headers['content-type'] || '').includes('multipart/form-data')) return next();
     return express.json({ limit: '30mb' })(req, res, next);
-  }, (req, res) => {
+  }, async (req, res) => {
     let uploadInput;
     if ((req.headers['content-type'] || '').includes('multipart/form-data')) {
       const multipart = parseMultipartFormData(req);
@@ -592,7 +598,7 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       uploadInput = parsed.parsed;
     }
 
-    const stored = mediaStorage.saveBase64Upload(uploadInput);
+    const stored = await mediaStorage.saveBase64Upload(uploadInput);
     if (!stored.ok) {
       logContentFailure(req, 'cms_media_upload_failed', stored.error.code);
       auditService?.record(toAuditContext(req, 'cms_media_upload', 'failure', { entityType: 'media_asset', metadata: { code: stored.error.code } }));
@@ -618,10 +624,24 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       alt: uploadInput.alt || uploadInput.filename,
       caption: uploadInput.caption || uploadInput.alt || uploadInput.filename,
       tags: uploadInput.tags,
-      source: 'local-disk',
+      source: stored.file.storageDriver || mediaStorage.driver || 'local-disk',
+      storageDriver: stored.file.storageDriver || mediaStorage.driver || 'local-disk',
+      publicId: stored.file.publicId || '',
+      assetId: stored.file.assetId || '',
+      resourceType: stored.file.resourceType || '',
+      width: stored.file.width,
+      height: stored.file.height,
       metadata: {
         mimeType: stored.file.mimeType,
         checksumSha256: stored.file.checksumSha256,
+        storageDriver: stored.file.storageDriver || mediaStorage.driver || 'local-disk',
+        publicId: stored.file.publicId || '',
+        assetId: stored.file.assetId || '',
+        resourceType: stored.file.resourceType || '',
+        format: stored.file.format || '',
+        version: stored.file.version || '',
+        width: stored.file.width || '',
+        height: stored.file.height || '',
       },
       createdAt: now,
       updatedAt: now,
@@ -630,6 +650,7 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
     const saved = contentService.saveMediaFile(mediaPayload);
     if (!saved.ok) {
       logContentFailure(req, 'cms_media_save_failed', saved.error.code);
+      await mediaStorage.deleteFile?.(mediaPayload);
       auditService?.record(toAuditContext(req, 'cms_media_upload', 'failure', {
         entityType: 'media_asset',
         entityId: stored.file.id,
@@ -666,12 +687,16 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
     return sendSuccess(res, 200, { mediaFile: toCanonicalMedia(result.mediaFile) });
   });
 
-  router.post('/media/:id/replace', requirePermission(Permissions.CONTENT_WRITE), (req, res) => {
+  router.post('/media/:id/replace', requirePermission(Permissions.CONTENT_WRITE), async (req, res) => {
+    const existing = contentService.listMediaFiles({ includeArchived: true }).find((entry) => entry.id === req.params.id);
+    const replacementMediaId = `${req.body?.metadata?.replacedFromMediaId || ''}`.trim();
     const result = contentService.replaceMediaFile(req.params.id, req.body || {});
     if (!result.ok) {
       const statusCode = result.error.code === 'MEDIA_NOT_FOUND' ? 404 : 400;
       return sendError(res, statusCode, result.error.code, result.error.message);
     }
+    if (existing && existing.id !== replacementMediaId) await mediaStorage.deleteFile?.(existing);
+    if (replacementMediaId && replacementMediaId !== req.params.id) contentService.deleteMediaFile(replacementMediaId);
     return sendSuccess(res, 200, { mediaFile: toCanonicalMedia(result.mediaFile), replaced: true });
   });
 
@@ -684,7 +709,7 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
     return sendSuccess(res, 200, { restored: restored.restored, mediaFile: toCanonicalMedia(restored.mediaFile) });
   });
 
-  router.delete('/media/:id', requirePermission(Permissions.CONTENT_WRITE), (req, res) => {
+  router.delete('/media/:id', requirePermission(Permissions.CONTENT_WRITE), async (req, res) => {
     const impact = contentService.getMediaUsageImpact(req.params.id);
     if (!impact.okToArchive) {
       auditService?.record(toAuditContext(req, 'cms_media_delete', 'failure', {
@@ -695,13 +720,13 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       return sendError(res, 409, 'MEDIA_IN_USE', 'Media file is still referenced by published or editable content.');
     }
 
-    const archived = contentService.archiveMediaFile(req.params.id);
-    if (!archived.ok) {
-      const statusCode = archived.error.code === 'MEDIA_NOT_FOUND' ? 404 : 409;
-      return sendError(res, statusCode, archived.error.code, archived.error.message);
-    }
+    const mediaFile = contentService.listMediaFiles({ includeArchived: true }).find((entry) => entry.id === req.params.id);
+    if (!mediaFile) return sendError(res, 404, 'MEDIA_NOT_FOUND', 'Media file not found.');
+    const removed = await mediaStorage.deleteFile?.(mediaFile);
+    if (removed && !removed.ok) return sendError(res, 502, removed.error.code, removed.error.message);
+    contentService.deleteMediaFile(req.params.id);
     auditService?.record(toAuditContext(req, 'cms_media_delete', 'success', { entityType: 'media_asset', entityId: req.params.id }));
-    return sendSuccess(res, 200, { deleted: false, archived: true, mediaFile: toCanonicalMedia(archived.mediaFile) });
+    return sendSuccess(res, 200, { deleted: true, archived: false });
   });
 
   router.get('/page-content', requirePermission(Permissions.CONTENT_READ), (req, res) =>
