@@ -412,6 +412,9 @@ const defaultSettings = {
       defaultSocialImage: '',
     },
   },
+  footer: {
+    socialLinks: [],
+  },
   operationalSettings: {
     instantPublishing: true,
   },
@@ -1155,6 +1158,7 @@ class ContentService {
         favicon: resolve(settings.siteSettings.brandMedia.favicon),
         defaultSocialImage: resolve(settings.siteSettings.brandMedia.defaultSocialImage),
       },
+      footer: settings.footer,
     };
   }
 
@@ -1220,6 +1224,9 @@ class ContentService {
 
   saveSettings(payload, actor = {}) {
     const state = this.readState();
+    if (Array.isArray(payload?.footer?.socialLinks) && payload.footer.socialLinks.some((entry) => !entry || typeof entry !== 'object' || !this.isValidSocialUrl(`${entry.url || ''}`.trim()))) {
+      return { ok: false, error: { code: 'SETTINGS_VALIDATION_ERROR', message: 'Invalid social link URL.' } };
+    }
     const normalized = this.registerSettingsMediaReferences(this.normalizeSettings(payload || {}), { state });
     if (!normalized.siteSettings.siteTitle.trim() || !normalized.siteSettings.supportEmail.includes('@')) {
       return { ok: false, error: { code: 'SETTINGS_VALIDATION_ERROR', message: 'Invalid settings payload.' } };
@@ -2714,6 +2721,7 @@ class ContentService {
 
   normalizeSettings(settings) {
     const siteSettingsCandidate = settings?.siteSettings && typeof settings.siteSettings === 'object' ? settings.siteSettings : settings;
+    const footerCandidate = settings?.footer && typeof settings.footer === 'object' ? settings.footer : {};
     const operationalSettingsCandidate = settings?.operationalSettings && typeof settings.operationalSettings === 'object' ? settings.operationalSettings : settings;
     const taxonomySettingsCandidate = settings?.taxonomySettings && typeof settings.taxonomySettings === 'object'
       ? settings.taxonomySettings
@@ -2746,6 +2754,9 @@ class ContentService {
             typeof siteSettingsCandidate?.brandMedia?.defaultSocialImage === 'string' ? siteSettingsCandidate.brandMedia.defaultSocialImage.trim() : '',
         },
       },
+      footer: {
+        socialLinks: this.normalizeSocialLinks(footerCandidate.socialLinks),
+      },
       operationalSettings: {
         instantPublishing: normalizedInstantPublishing,
       },
@@ -2761,11 +2772,34 @@ class ContentService {
     return {
       ...normalized,
       // Backward-compat aliases for legacy clients and historical snapshots.
+      brandMedia: normalized.siteSettings.brandMedia,
       siteTitle: normalized.siteSettings.siteTitle,
       supportEmail: normalized.siteSettings.supportEmail,
       instantPublishing: normalized.operationalSettings.instantPublishing,
       taxonomy: normalized.taxonomySettings,
     };
+  }
+
+  normalizeSocialLinks(candidate) {
+    if (!Array.isArray(candidate)) return [];
+    return candidate.flatMap((entry) => {
+      if (!entry || typeof entry !== 'object') return [];
+      const platform = `${entry.platform || ''}`.trim().toLowerCase();
+      const label = `${entry.label || ''}`.trim();
+      const url = `${entry.url || ''}`.trim();
+      if (!platform || !label || !url || !this.isValidSocialUrl(url)) return [];
+      return [{ platform, label, url, enabled: entry.enabled !== false }];
+    });
+  }
+
+  isValidSocialUrl(value) {
+    if (/^mailto:[^@\s]+@[^@\s]+\.[^@\s]+$/i.test(value)) return true;
+    try {
+      const url = new URL(value);
+      return url.protocol === 'https:' || url.protocol === 'http:';
+    } catch {
+      return false;
+    }
   }
 
   normalizeManagedTaxonomyList(candidate, fallback) {
@@ -2829,6 +2863,7 @@ class ContentService {
     register('siteSettings.brandMedia.logoDark', previous.siteSettings.brandMedia.logoDark, next.siteSettings.brandMedia.logoDark);
     register('siteSettings.brandMedia.favicon', previous.siteSettings.brandMedia.favicon, next.siteSettings.brandMedia.favicon);
     register('siteSettings.brandMedia.defaultSocialImage', previous.siteSettings.brandMedia.defaultSocialImage, next.siteSettings.brandMedia.defaultSocialImage);
+    register('footer.socialLinks', JSON.stringify(previous.footer.socialLinks), JSON.stringify(next.footer.socialLinks));
     if (previous.operationalSettings.instantPublishing !== next.operationalSettings.instantPublishing) {
       changedFields.push('operationalSettings.instantPublishing');
     }

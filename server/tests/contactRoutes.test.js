@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
-const { createContactRoutes, validateContactPayload } = require('../routes/contactRoutes');
+const { createContactRoutes, createMessageManagementRoutes, validateContactPayload } = require('../routes/contactRoutes');
 
 function createRes() {
   return {
@@ -32,6 +32,13 @@ describe('contact route payload validation', () => {
     expect(result.error.code).toBe('CONTACT_INVALID_EMAIL');
   });
 
+  it('accepts phone-only payload with an optional subject', () => {
+    const result = validateContactPayload({ name: 'John Doe', phone: '+22501020304', message: 'Please call me about a project.' });
+    expect(result.ok).toBe(true);
+    expect(result.data.email).toBe('');
+    expect(result.data.subject).toBe('');
+  });
+
   it('accepts valid payload', () => {
     const result = validateContactPayload({
       name: 'John Doe',
@@ -48,12 +55,25 @@ describe('contact route payload validation', () => {
     expect(result.data.source).toBe('project');
     expect(result.data.contextSlug).toBe('nouveau-projet');
   });
+  it('exposes message status update and delete handlers', async () => {
+    const service = { updateStatus: async (id, status) => ({ id, status }), deleteSubmission: async () => true };
+    const router = createMessageManagementRoutes({ contactService: service });
+    const patchLayer = router.stack.find((entry) => entry.route?.path === '/:id' && entry.route.methods.patch);
+    const deleteLayer = router.stack.find((entry) => entry.route?.path === '/:id' && entry.route.methods.delete);
+    const patchRes = createRes();
+    await patchLayer.route.stack.at(-1).handle({ params: { id: 'sub_1' }, body: { status: 'read' } }, patchRes);
+    expect(patchRes.body.data.message.status).toBe('read');
+    const deleteRes = createRes();
+    await deleteLayer.route.stack.at(-1).handle({ params: { id: 'sub_1' } }, deleteRes);
+    expect(deleteRes.body.data.deleted).toBe(true);
+  });
+
 });
 
 describe('contact route delivery responses', () => {
   it('returns success when email provider sends', async () => {
     const router = createContactRoutes({
-      contactService: { submit: async () => ({ delivered: true, mode: 'resend', submission: { id: 'sub_1' } }) },
+      contactService: { submit: async () => ({ delivered: true, mode: 'resend', status: 'sent', submission: { id: 'sub_1' } }) },
     });
 
     const handler = router.stack[0].route.stack[0].handle;
@@ -96,8 +116,8 @@ describe('contact route delivery responses', () => {
 
     await handler(req, res);
 
-    expect(res.statusCode).toBe(502);
-    expect(res.body.error.code).toBe('CONTACT_EMAIL_FAILED');
+    expect(res.statusCode).toBe(500);
+    expect(res.body.error.code).toBe('CONTACT_SUBMISSION_FAILED');
   });
 
   it('returns persistence failure when repository did not save record', async () => {
@@ -127,7 +147,7 @@ describe('contact route delivery responses', () => {
   it('exposes admin submissions list endpoint', async () => {
     const router = createContactRoutes({
       contactService: {
-        submit: async () => ({ delivered: true, mode: 'resend', submission: { id: 'sub_1' } }),
+        submit: async () => ({ delivered: true, mode: 'resend', status: 'sent', submission: { id: 'sub_1' } }),
         listSubmissions: async () => ({
           items: [{ id: 'sub_1', email: 'john@example.com', source: 'project', deliveryStatus: 'sent' }],
           pagination: { page: 1, limit: 50, total: 1, pages: 1 },

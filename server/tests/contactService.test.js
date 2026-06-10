@@ -1,5 +1,6 @@
-const { describe, it, expect, vi, beforeEach } = require('vitest');
-const { ContactService } = require('../services/contactService');
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import contactServiceModule from '../services/contactService.js';
+const { ContactService } = contactServiceModule;
 
 describe('ContactService', () => {
   let repository;
@@ -8,6 +9,8 @@ describe('ContactService', () => {
     repository = {
       create: vi.fn(),
       updateDeliveryStatus: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
       list: vi.fn(),
     };
   });
@@ -18,7 +21,7 @@ describe('ContactService', () => {
 
     const service = new ContactService({
       contactSubmissionRepository: repository,
-      emailService: { sendContactEmail: vi.fn(async () => ({ delivered: true, mode: 'resend' })) },
+      emailService: { isDeliveryReady: vi.fn(() => true), sendContactEmail: vi.fn(async () => ({ delivered: true, mode: 'resend' })) },
     });
 
     const result = await service.submit({
@@ -35,12 +38,21 @@ describe('ContactService', () => {
     expect(result.submission.id).toBe('lead_1');
   });
 
+  it('keeps a saved message successful when email is not configured', async () => {
+    repository.create.mockResolvedValue({ id: 'lead_2' });
+    repository.updateDeliveryStatus.mockResolvedValue({ id: 'lead_2', deliveryStatus: 'disabled' });
+    const service = new ContactService({ contactSubmissionRepository: repository, emailService: { isDeliveryReady: () => false } });
+    const result = await service.submit({ name: 'Jane', phone: '+2250102', message: 'Please call me about a project.' });
+    expect(result.warning).toBe('EMAIL_NOT_CONFIGURED');
+    expect(result.submission.id).toBe('lead_2');
+  });
+
   it('throws persistence failure when repository create does not return id', async () => {
     repository.create.mockResolvedValue(null);
 
     const service = new ContactService({
       contactSubmissionRepository: repository,
-      emailService: { sendContactEmail: vi.fn() },
+      emailService: { isDeliveryReady: vi.fn(() => true), sendContactEmail: vi.fn() },
     });
 
     await expect(service.submit({

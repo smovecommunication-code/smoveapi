@@ -26,7 +26,7 @@ class EmailService {
 
     this.resendReady = Boolean(this.config.resendApiKey && this.config.from);
 
-    this.deliveryReady = this.resendReady || this.smtpReady;
+    this.deliveryReady = Boolean(this.config.contactTo && (this.resendReady || this.smtpReady));
 
     this.transporter = this.smtpReady
       ? nodemailer.createTransport({
@@ -145,7 +145,7 @@ class EmailService {
     }
 
     const safePhone = `${phone || ''}`.trim() || 'not provided';
-    const composedSubject = `[Contact] ${subject}`;
+    const composedSubject = `[Contact] ${subject || 'New message'}`;
     const text = [
       'New contact form submission',
       `Source: ${source}`,
@@ -163,7 +163,7 @@ class EmailService {
       to,
       subject: composedSubject,
       text,
-      replyTo: email,
+      replyTo: email || undefined,
     });
   }
 }

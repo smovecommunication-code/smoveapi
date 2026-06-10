@@ -16,7 +16,7 @@ function validateContactPayload(body) {
   const subject = normalizeString(body?.subject);
   const message = normalizeString(body?.message);
   const phone = normalizeString(body?.phone);
-  const source = normalizeString(body?.source).toLowerCase().slice(0, 40) || 'website';
+  const source = normalizeString(body?.source).toLowerCase().slice(0, 40) || 'site';
   const contextSlug = normalizeString(body?.contextSlug).toLowerCase().slice(0, 120);
   const contextLabel = normalizeString(body?.contextLabel).slice(0, 160);
 
@@ -24,12 +24,11 @@ function validateContactPayload(body) {
     return { ok: false, error: { code: 'CONTACT_INVALID_NAME', message: 'Name is required.' } };
   }
 
-  if (!EMAIL_PATTERN.test(email)) {
-    return { ok: false, error: { code: 'CONTACT_INVALID_EMAIL', message: 'Email is invalid.' } };
+  if (!email && !phone) {
+    return { ok: false, error: { code: 'CONTACT_MISSING_REPLY_CHANNEL', message: 'Email or phone is required.' } };
   }
-
-  if (!subject || subject.length < 3) {
-    return { ok: false, error: { code: 'CONTACT_INVALID_SUBJECT', message: 'Subject is required.' } };
+  if (email && !EMAIL_PATTERN.test(email)) {
+    return { ok: false, error: { code: 'CONTACT_INVALID_EMAIL', message: 'Email is invalid.' } };
   }
 
   if (!message || message.length < 10) {
@@ -69,8 +68,9 @@ function createContactRoutes({ contactService }) {
         delivered: result.delivered,
         mode: result.mode,
         status: result.status,
+        warning: result.warning || null,
         submissionId: result.submission.id,
-        message: 'Votre message a bien été transmis. Nous revenons vers vous rapidement.',
+        message: result.warning ? 'Votre message a bien été enregistré. La notification email est indisponible, mais notre équipe peut le consulter.' : 'Votre message a bien été transmis. Nous revenons vers vous rapidement.',
       });
     } catch (error) {
       logWarn('contact_email_failed', {
@@ -80,7 +80,7 @@ function createContactRoutes({ contactService }) {
       if (`${error?.message || ''}`.includes('CONTACT_PERSISTENCE_FAILED')) {
         return sendError(res, 500, 'CONTACT_PERSISTENCE_FAILED', 'Unable to store message right now. Please try again later.');
       }
-      return sendError(res, 502, 'CONTACT_EMAIL_FAILED', 'Unable to send message right now. Please try again later.');
+      return sendError(res, 500, 'CONTACT_SUBMISSION_FAILED', 'Unable to store message right now. Please try again later.');
     }
   });
 
@@ -102,4 +102,33 @@ function createContactRoutes({ contactService }) {
   return router;
 }
 
-module.exports = { createContactRoutes, validateContactPayload };
+function createMessageManagementRoutes({ contactService }) {
+  const router = express.Router();
+  router.use(requireAuthenticated);
+
+  router.get('/', requirePermission(Permissions.CONTENT_READ), async (req, res) => {
+    const data = await contactService.listSubmissions({
+      page: req.query?.page, limit: req.query?.limit, query: normalizeString(req.query?.q),
+      source: normalizeString(req.query?.source || 'all').toLowerCase(),
+      deliveryStatus: normalizeString(req.query?.deliveryStatus || 'all').toLowerCase(),
+      status: normalizeString(req.query?.status || 'all').toLowerCase(),
+    });
+    res.setHeader('Cache-Control', 'no-store');
+    return sendSuccess(res, 200, data);
+  });
+
+  router.patch('/:id', requirePermission(Permissions.CONTENT_WRITE), async (req, res) => {
+    const status = normalizeString(req.body?.status).toLowerCase();
+    if (!['new', 'read', 'archived'].includes(status)) return sendError(res, 400, 'MESSAGE_INVALID_STATUS', 'Status must be new, read, or archived.');
+    const message = await contactService.updateStatus(req.params.id, status);
+    return message ? sendSuccess(res, 200, { message }) : sendError(res, 404, 'MESSAGE_NOT_FOUND', 'Message not found.');
+  });
+
+  router.delete('/:id', requirePermission(Permissions.USER_MANAGE), async (req, res) => {
+    const deleted = await contactService.deleteSubmission(req.params.id);
+    return deleted ? sendSuccess(res, 200, { deleted: true, id: req.params.id }) : sendError(res, 404, 'MESSAGE_NOT_FOUND', 'Message not found.');
+  });
+  return router;
+}
+
+module.exports = { createContactRoutes, createMessageManagementRoutes, validateContactPayload };

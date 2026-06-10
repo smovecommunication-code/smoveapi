@@ -10,6 +10,16 @@ class MongoContactSubmissionRepository {
     return this.serialize(doc);
   }
 
+  async update(id, payload) {
+    const doc = await this.ContactSubmissionModel.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
+    return doc ? this.serialize(doc) : null;
+  }
+
+  async delete(id) {
+    const doc = await this.ContactSubmissionModel.findByIdAndDelete(id);
+    return Boolean(doc);
+  }
+
   async updateDeliveryStatus(id, payload) {
     const doc = await this.ContactSubmissionModel.findByIdAndUpdate(id, payload, { new: true });
     if (!doc) {
@@ -24,6 +34,7 @@ class MongoContactSubmissionRepository {
     const query = `${filters.query || ''}`.trim();
     const source = `${filters.source || 'all'}`.trim().toLowerCase();
     const deliveryStatus = `${filters.deliveryStatus || 'all'}`.trim().toLowerCase();
+    const status = `${filters.status || 'all'}`.trim().toLowerCase();
 
     const mongoQuery = {};
     if (query) {
@@ -40,6 +51,9 @@ class MongoContactSubmissionRepository {
     }
     if (deliveryStatus !== 'all') {
       mongoQuery.deliveryStatus = deliveryStatus;
+    }
+    if (status !== 'all') {
+      mongoQuery.status = status;
     }
 
     const [docs, total, summaryRows] = await Promise.all([
@@ -90,6 +104,7 @@ class MongoContactSubmissionRepository {
       message: doc.message,
       phone: doc.phone,
       source: doc.source,
+      status: doc.status ?? 'new',
       contextSlug: doc.contextSlug,
       contextLabel: doc.contextLabel,
       requestId: doc.requestId,
@@ -98,6 +113,7 @@ class MongoContactSubmissionRepository {
       deliveryStatus: doc.deliveryStatus ?? 'received',
       deliveryError: doc.deliveryError ?? null,
       createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
     };
   }
 }
