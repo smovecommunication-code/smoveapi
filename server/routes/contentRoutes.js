@@ -235,8 +235,8 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
 
     const publishedPosts = contentService.listBlogPosts().filter(isPublicBlogEligible);
     const post =
-      publishedPosts.find((entry) => normalizePublicBlogSlug(entry?.seo?.canonicalSlug) === slug) ||
       publishedPosts.find((entry) => normalizePublicBlogSlug(entry.slug) === slug) ||
+      publishedPosts.find((entry) => normalizePublicBlogSlug(entry?.seo?.canonicalSlug) === slug) ||
       publishedPosts.find((entry) => normalizePublicBlogSlug(entry.id) === slug);
 
     if (!post) {

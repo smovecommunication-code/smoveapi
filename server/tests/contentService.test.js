@@ -44,6 +44,29 @@ describe('ContentService blog persistence', () => {
     expect(new Set(second.map((post) => post.slug)).size).toBe(second.length);
   });
 
+
+  it('creates a published article from only title and image', () => {
+    const service = new ContentService({ contentRepository: new MemoryContentRepository({ blogPosts: [], mediaFiles: [] }) });
+
+    const result = service.saveBlogPost({ title: 'Article minimal été', imageUrl: 'https://res.cloudinary.com/demo/image/upload/article.jpg' });
+
+    expect(result.ok).toBe(true);
+    expect(result.post.slug).toBe('article-minimal-ete');
+    expect(result.post.status).toBe('published');
+    expect(result.post.excerpt).toBe('');
+    expect(result.post.content).toBe('');
+    expect(result.post.featuredImage).toMatch(/^media:/);
+    expect(result.post.mediaRoles.featuredImage).toBe(result.post.featuredImage);
+    expect(service.listBlogPosts().some((post) => post.id === result.post.id)).toBe(true);
+  });
+
+  it('rejects a new article when title or image is missing', () => {
+    const service = new ContentService({ contentRepository: new MemoryContentRepository({ blogPosts: [], mediaFiles: [] }) });
+
+    expect(service.saveBlogPost({ imageUrl: 'https://res.cloudinary.com/demo/image/upload/article.jpg' }).ok).toBe(false);
+    expect(service.saveBlogPost({ title: 'Sans image' }).ok).toBe(false);
+  });
+
   it('supports status lifecycle and prevents publishing invalid posts', () => {
     const repo = new MemoryContentRepository({
       blogPosts: [
@@ -1519,6 +1542,17 @@ describe('ContentService production hardening', () => {
     expect(saved.settings.supportEmail).toBe('ops@smove.africa');
     expect(saved.settings.instantPublishing).toBe(false);
     expect(saved.settings.taxonomy.blog.managedCategories).toEqual(['Branding', 'Web']);
+  });
+
+  it('normalizes responsive logo sizing and custom social link icons', () => {
+    const service = new ContentService({ contentRepository: new MemoryContentRepository() });
+    const settings = service.normalizeSettings({
+      branding: { logoSize: { desktop: 500, tablet: 101.7, mobile: 12 } },
+      footer: { socialLinks: [{ platform: 'custom', label: 'Community', url: 'https://example.com', enabled: false, icon: ' media:community-icon ' }] },
+    });
+
+    expect(settings.branding.logoSize).toEqual({ desktop: 320, tablet: 102, mobile: 40 });
+    expect(settings.footer.socialLinks[0]).toEqual({ platform: 'custom', label: 'Community', url: 'https://example.com', enabled: false, icon: 'media:community-icon' });
   });
 
   it('reports invalid media references in synchronization diagnostics', () => {

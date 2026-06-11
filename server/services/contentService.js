@@ -412,6 +412,9 @@ const defaultSettings = {
       defaultSocialImage: '',
     },
   },
+  branding: {
+    logoSize: { desktop: 120, tablet: 100, mobile: 80 },
+  },
   footer: {
     socialLinks: [],
   },
@@ -494,7 +497,7 @@ class ContentService {
 
   seedBlogPostsFromLegacy() {
     const state = this.readState();
-    const existingPosts = Array.isArray(state.blogPosts) ? state.blogPosts.map((post) => this.normalizePost(post)).filter((post) => this.validateBlogPost(post)) : [];
+    const existingPosts = Array.isArray(state.blogPosts) ? state.blogPosts.map((post) => this.normalizePost(post)).filter((post) => post.id && post.title) : [];
 
     if (existingPosts.length === 0) {
       state.blogPosts = defaultBlogPosts.map((post) => this.normalizePost(post));
@@ -541,21 +544,9 @@ class ContentService {
       return { ok: false, error: { code: 'FORBIDDEN_OWNERSHIP', message: 'Cannot modify content owned by another user.' } };
     }
     if (normalized.status === 'published') {
-      if (!this.getSettings().operationalSettings.instantPublishing) {
-        return {
-          ok: false,
-          error: {
-            code: 'BLOG_INSTANT_PUBLISHING_DISABLED',
-            message: 'Instant publishing is disabled. Move content to in_review before publishing.',
-          },
-        };
-      }
       const publishability = this.evaluatePublishability(normalized);
       if (!publishability.ok) {
         return { ok: false, error: { code: 'BLOG_NOT_PUBLISHABLE', message: publishability.message } };
-      }
-      if (!existing || !['in_review', 'published'].includes(existing.status)) {
-        return { ok: false, error: { code: 'BLOG_INVALID_STATUS_TRANSITION', message: 'Content must be in review before publishing.' } };
       }
     }
 
@@ -1158,7 +1149,10 @@ class ContentService {
         favicon: resolve(settings.siteSettings.brandMedia.favicon),
         defaultSocialImage: resolve(settings.siteSettings.brandMedia.defaultSocialImage),
       },
-      footer: settings.footer,
+      branding: settings.branding,
+      footer: {
+        socialLinks: settings.footer.socialLinks.map((link) => ({ ...link, icon: resolve(link.icon) })),
+      },
     };
   }
 
@@ -1662,48 +1656,64 @@ class ContentService {
   }
 
   normalizePost(raw, actor = {}) {
-    const status = BLOG_STATUSES.has(raw?.status) ? raw.status : 'draft';
+    const nowIso = new Date().toISOString();
+    const createdAt = this.isValidDate(raw?.createdAt)
+      ? new Date(raw.createdAt).toISOString()
+      : this.isValidDate(raw?.publishedDate)
+        ? new Date(raw.publishedDate).toISOString()
+        : nowIso;
+    const isMutation = Boolean(actor.userId || actor.organizationId);
+    const status = BLOG_STATUSES.has(raw?.status) ? raw.status : 'published';
     const title = typeof raw?.title === 'string' ? raw.title.trim() : '';
     const slug = this.normalizeSlug(typeof raw?.slug === 'string' ? raw.slug : title || raw?.id || 'article');
-    const excerpt = typeof raw?.excerpt === 'string' ? raw.excerpt.trim() : '';
-    const content = typeof raw?.content === 'string' ? raw.content.trim() : '';
-
+    const excerpt = typeof raw?.excerpt === 'string' ? raw.excerpt.trim() : typeof raw?.summary === 'string' ? raw.summary.trim() : '';
+    const content = typeof raw?.content === 'string' ? raw.content.trim() : typeof raw?.body === 'string' ? raw.body.trim() : '';
+    const directImage = [raw?.mediaRoles?.featuredImage, raw?.featuredImage, raw?.coverImage, raw?.image, raw?.imageUrl, raw?.socialImage]
+      .find((value) => typeof value === 'string' && value.trim());
+    const featuredImage = typeof directImage === 'string' ? directImage.trim() : '';
     const canonicalSlug = this.normalizeSlug((raw?.seo && raw.seo.canonicalSlug) || slug || title || 'article');
-    const featuredImage = typeof raw?.featuredImage === 'string' && raw.featuredImage.trim() ? raw.featuredImage.trim() : 'blog article image';
     const socialImage =
       (raw?.mediaRoles && typeof raw.mediaRoles.socialImage === 'string' && raw.mediaRoles.socialImage.trim()) ||
       (raw?.seo && typeof raw.seo.socialImage === 'string' && raw.seo.socialImage.trim()) ||
+      (typeof raw?.socialImage === 'string' && raw.socialImage.trim()) ||
       featuredImage;
 
     return {
       ...raw,
+      id: typeof raw?.id === 'string' && raw.id.trim() ? raw.id.trim() : `post-${crypto.randomUUID()}`,
       status,
       title,
       slug,
-      excerpt: excerpt || (content ? content.slice(0, 160) : `Résumé à compléter pour ${title || 'cet article'}.`),
-      content: content || 'Contenu à compléter.',
-      author: typeof raw?.author === 'string' && raw.author.trim() ? raw.author.trim() : 'Équipe SMOVE',
-      authorRole: typeof raw?.authorRole === 'string' && raw.authorRole.trim() ? raw.authorRole.trim() : 'CMS Editor',
-      category: this.normalizeBlogCategory(raw?.category),
+      excerpt,
+      summary: typeof raw?.summary === 'string' ? raw.summary.trim() : excerpt,
+      content,
+      body: typeof raw?.body === 'string' ? raw.body.trim() : content,
+      author: typeof raw?.author === 'string' ? raw.author.trim() : '',
+      authorRole: typeof raw?.authorRole === 'string' ? raw.authorRole.trim() : '',
+      category: typeof raw?.category === 'string' ? this.normalizeBlogCategory(raw.category) : '',
       tags: this.normalizeBlogTags(raw?.tags),
-      publishedDate: this.isValidDate(raw?.publishedDate) ? new Date(raw.publishedDate).toISOString() : new Date().toISOString(),
-      readTime: typeof raw?.readTime === 'string' && raw.readTime.trim() ? raw.readTime.trim() : '5 min',
+      publishedDate: this.isValidDate(raw?.publishedDate) ? new Date(raw.publishedDate).toISOString() : nowIso,
+      readTime: typeof raw?.readTime === 'string' ? raw.readTime.trim() : '',
       featuredImage,
       images: Array.isArray(raw?.images) ? raw.images.map((entry) => `${entry}`.trim()).filter(Boolean) : [],
       seo: {
-        title: (raw?.seo?.title || title).trim() || title || 'Article SMOVE',
-        description: (raw?.seo?.description || excerpt || content.slice(0, 160)).trim() || `Article ${title || 'SMOVE'}`,
+        ...(raw?.seo || {}),
+        title: typeof raw?.seo?.title === 'string' ? raw.seo.title.trim() : '',
+        description: typeof raw?.seo?.description === 'string' ? raw.seo.description.trim() : '',
         canonicalSlug,
         socialImage,
         noIndex: Boolean(raw?.seo?.noIndex),
         canonicalUrl: typeof raw?.seo?.canonicalUrl === 'string' ? raw.seo.canonicalUrl.trim() : '',
       },
       mediaRoles: {
+        ...(raw?.mediaRoles || {}),
         featuredImage,
         coverImage: (raw?.mediaRoles?.coverImage || featuredImage || '').trim(),
         cardImage: (raw?.mediaRoles?.cardImage || featuredImage || '').trim(),
         socialImage,
       },
+      createdAt,
+      updatedAt: isMutation ? nowIso : (this.isValidDate(raw?.updatedAt) ? new Date(raw.updatedAt).toISOString() : createdAt),
       ownerUserId: typeof raw?.ownerUserId === 'string' && raw.ownerUserId.trim() ? raw.ownerUserId.trim() : actor.userId || 'system',
       organizationId:
         typeof raw?.organizationId === 'string' && raw.organizationId.trim()
@@ -1749,40 +1759,14 @@ class ContentService {
   }
 
   validateBlogPost(post) {
+    const featuredReference = this.getCanonicalBlogFeaturedReference(post);
     return Boolean(
       post &&
-      typeof post.id === 'string' &&
-      typeof post.title === 'string' &&
-      typeof post.slug === 'string' &&
-      typeof post.excerpt === 'string' &&
-      typeof post.content === 'string' &&
-      typeof post.author === 'string' &&
-      typeof post.authorRole === 'string' &&
-      typeof post.category === 'string' &&
-      Array.isArray(post.tags) &&
-      this.isValidDate(post.publishedDate) &&
-      typeof post.readTime === 'string' &&
-      post.readTime.trim().length > 0 &&
-      typeof post.featuredImage === 'string' &&
-      post.featuredImage.trim().length > 0 &&
-      this.isValidMediaLink(post.featuredImage) &&
-      Array.isArray(post.images) &&
-      post.images.every((image) => this.isValidMediaLink(image)) &&
-      (post.seo === undefined ||
-        (typeof post.seo === 'object' &&
-          (post.seo.socialImage === undefined || this.isValidMediaLink(post.seo.socialImage)) &&
-          (post.seo.canonicalSlug === undefined || isValidSlug(post.seo.canonicalSlug)))) &&
-      (post.mediaRoles === undefined ||
-        (typeof post.mediaRoles === 'object' &&
-          (post.mediaRoles.featuredImage === undefined || this.isValidMediaLink(post.mediaRoles.featuredImage)) &&
-          (post.mediaRoles.socialImage === undefined || this.isValidMediaLink(post.mediaRoles.socialImage)) &&
-          (post.mediaRoles.coverImage === undefined || this.isValidMediaLink(post.mediaRoles.coverImage)) &&
-          (post.mediaRoles.cardImage === undefined || this.isValidMediaLink(post.mediaRoles.cardImage)))) &&
-      typeof post.ownerUserId === 'string' &&
-      post.ownerUserId.trim().length > 0 &&
-      typeof post.organizationId === 'string' &&
-      post.organizationId.trim().length > 0 &&
-      isValidSlug(post.slug) &&
+      typeof post.id === 'string' && post.id.trim() &&
+      typeof post.title === 'string' && post.title.trim() &&
+      typeof post.slug === 'string' && isValidSlug(post.slug) &&
+      typeof featuredReference === 'string' && featuredReference.trim() &&
+      this.isValidMediaLink(featuredReference) &&
       BLOG_STATUSES.has(post.status)
     );
   }
@@ -2455,6 +2439,10 @@ class ContentService {
           defaultSocialImage: register(settings.siteSettings.brandMedia.defaultSocialImage, 'defaultSocialImage'),
         },
       },
+      footer: {
+        ...settings.footer,
+        socialLinks: settings.footer.socialLinks.map((link) => ({ ...link, icon: register(link.icon, 'socialIcon') })),
+      },
     };
   }
 
@@ -2715,6 +2703,7 @@ class ContentService {
     register(settings.siteSettings.brandMedia.logoDark, { domain: 'settings', id: 'global', status: 'system', field: 'siteSettings.brandMedia.logoDark', label: 'Site settings' });
     register(settings.siteSettings.brandMedia.favicon, { domain: 'settings', id: 'global', status: 'system', field: 'siteSettings.brandMedia.favicon', label: 'Site settings' });
     register(settings.siteSettings.brandMedia.defaultSocialImage, { domain: 'settings', id: 'global', status: 'system', field: 'siteSettings.brandMedia.defaultSocialImage', label: 'Site settings' });
+    settings.footer.socialLinks.forEach((link, index) => register(link.icon, { domain: 'settings', id: 'global', status: 'system', field: `footer.socialLinks[${index}].icon`, label: link.label }));
 
     return references;
   }
@@ -2722,6 +2711,7 @@ class ContentService {
   normalizeSettings(settings) {
     const siteSettingsCandidate = settings?.siteSettings && typeof settings.siteSettings === 'object' ? settings.siteSettings : settings;
     const footerCandidate = settings?.footer && typeof settings.footer === 'object' ? settings.footer : {};
+    const brandingCandidate = settings?.branding && typeof settings.branding === 'object' ? settings.branding : {};
     const operationalSettingsCandidate = settings?.operationalSettings && typeof settings.operationalSettings === 'object' ? settings.operationalSettings : settings;
     const taxonomySettingsCandidate = settings?.taxonomySettings && typeof settings.taxonomySettings === 'object'
       ? settings.taxonomySettings
@@ -2753,6 +2743,9 @@ class ContentService {
           defaultSocialImage:
             typeof siteSettingsCandidate?.brandMedia?.defaultSocialImage === 'string' ? siteSettingsCandidate.brandMedia.defaultSocialImage.trim() : '',
         },
+      },
+      branding: {
+        logoSize: this.normalizeLogoSize(brandingCandidate.logoSize),
       },
       footer: {
         socialLinks: this.normalizeSocialLinks(footerCandidate.socialLinks),
@@ -2788,8 +2781,15 @@ class ContentService {
       const label = `${entry.label || ''}`.trim();
       const url = `${entry.url || ''}`.trim();
       if (!platform || !label || !url || !this.isValidSocialUrl(url)) return [];
-      return [{ platform, label, url, enabled: entry.enabled !== false }];
+      const icon = `${entry.icon || ''}`.trim();
+      return [{ platform, label, url, enabled: entry.enabled !== false, icon }];
     });
+  }
+
+  normalizeLogoSize(candidate) {
+    const defaults = defaultSettings.branding.logoSize;
+    const clamp = (value, fallback) => typeof value === 'number' && Number.isFinite(value) ? Math.min(320, Math.max(40, Math.round(value))) : fallback;
+    return { desktop: clamp(candidate?.desktop, defaults.desktop), tablet: clamp(candidate?.tablet, defaults.tablet), mobile: clamp(candidate?.mobile, defaults.mobile) };
   }
 
   isValidSocialUrl(value) {
@@ -2863,6 +2863,7 @@ class ContentService {
     register('siteSettings.brandMedia.logoDark', previous.siteSettings.brandMedia.logoDark, next.siteSettings.brandMedia.logoDark);
     register('siteSettings.brandMedia.favicon', previous.siteSettings.brandMedia.favicon, next.siteSettings.brandMedia.favicon);
     register('siteSettings.brandMedia.defaultSocialImage', previous.siteSettings.brandMedia.defaultSocialImage, next.siteSettings.brandMedia.defaultSocialImage);
+    register('branding.logoSize', JSON.stringify(previous.branding.logoSize), JSON.stringify(next.branding.logoSize));
     register('footer.socialLinks', JSON.stringify(previous.footer.socialLinks), JSON.stringify(next.footer.socialLinks));
     if (previous.operationalSettings.instantPublishing !== next.operationalSettings.instantPublishing) {
       changedFields.push('operationalSettings.instantPublishing');
