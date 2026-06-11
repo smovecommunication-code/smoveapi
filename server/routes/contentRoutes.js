@@ -343,7 +343,22 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       return sendError(res, 404, 'BLOG_NOT_FOUND', 'Blog post not found.');
     }
 
-    const result = contentService.saveBlogPost(mergePatch(existing, { ...req.body, id: req.params.id }), actor);
+    const requestedPatch = { ...req.body, id: req.params.id };
+    const explicitlyClearsFeaturedImage = ['featuredImage', 'coverImage', 'image', 'imageUrl']
+      .some((field) => Object.prototype.hasOwnProperty.call(requestedPatch, field) && requestedPatch[field] === '');
+    if (explicitlyClearsFeaturedImage) {
+      requestedPatch.featuredImage = '';
+      requestedPatch.coverImage = '';
+      requestedPatch.image = '';
+      requestedPatch.imageUrl = '';
+      requestedPatch.mediaRoles = {
+        ...(requestedPatch.mediaRoles || {}),
+        featuredImage: '',
+        coverImage: '',
+        cardImage: '',
+      };
+    }
+    const result = contentService.saveBlogPost(mergePatch(existing, requestedPatch), actor);
     if (!result.ok) {
       logContentFailure(req, 'cms_blog_patch_failed', result.error.code, { postId: req.params.id });
       return sendError(res, 400, result.error.code, result.error.message);

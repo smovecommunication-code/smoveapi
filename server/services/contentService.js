@@ -1447,13 +1447,14 @@ class ContentService {
   }
 
   evaluatePublishability(post) {
-    if (!post.title?.trim() || !post.slug?.trim() || !post.featuredImage?.trim()) {
+    if (!post.title?.trim() || !post.slug?.trim()) {
       return { ok: false, message: 'Missing required publish fields.' };
     }
     if (!this.isValidDate(post.publishedDate)) {
       return { ok: false, message: 'Published date must be a valid ISO date.' };
     }
-    if (!this.isValidMediaLink(post.featuredImage)) {
+    const featuredReference = this.getCanonicalBlogFeaturedReference(post);
+    if (featuredReference && !this.isValidMediaLink(featuredReference)) {
       return { ok: false, message: 'Featured image must be a valid URL or media reference.' };
     }
     return { ok: true };
@@ -1478,14 +1479,17 @@ class ContentService {
   getBlogReadinessIssues(post) {
     const issues = [];
     if (post.status !== 'published') return issues;
-    if (!post.title?.trim() || !post.slug?.trim() || !post.featuredImage?.trim()) {
-      issues.push({ severity: 'blocker', code: 'blog_missing_required_publish_fields', message: 'Article publié sans titre/slug/image vedette complète.' });
+    if (!post.title?.trim() || !post.slug?.trim()) {
+      issues.push({ severity: 'blocker', code: 'blog_missing_required_publish_fields', message: 'Article publié sans titre ou slug.' });
+    }
+    if (!this.getCanonicalBlogFeaturedReference(post)) {
+      issues.push({ severity: 'warning', code: 'blog_missing_featured_media', message: 'Article publié sans image vedette; le site utilisera son visuel de repli.' });
     }
     if (!this.isValidDate(post.publishedDate)) {
       issues.push({ severity: 'blocker', code: 'blog_invalid_publish_date', message: 'Date de publication blog invalide.' });
     }
     const featuredReference = this.getCanonicalBlogFeaturedReference(post);
-    if (!this.isValidMediaLink(featuredReference)) {
+    if (featuredReference && !this.isValidMediaLink(featuredReference)) {
       issues.push({ severity: 'blocker', code: 'blog_invalid_featured_media', message: 'Image vedette blog invalide (URL ou media:asset-id attendu).' });
     }
     if (!post.seo?.title || !post.seo?.description || !post.seo?.canonicalSlug) {
@@ -1765,8 +1769,7 @@ class ContentService {
       typeof post.id === 'string' && post.id.trim() &&
       typeof post.title === 'string' && post.title.trim() &&
       typeof post.slug === 'string' && isValidSlug(post.slug) &&
-      typeof featuredReference === 'string' && featuredReference.trim() &&
-      this.isValidMediaLink(featuredReference) &&
+      (!featuredReference || this.isValidMediaLink(featuredReference)) &&
       BLOG_STATUSES.has(post.status)
     );
   }
