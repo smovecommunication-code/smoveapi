@@ -1691,6 +1691,15 @@ class ContentService {
       excerpt,
       summary: typeof raw?.summary === 'string' ? raw.summary.trim() : excerpt,
       content,
+      contentBlocks: Array.isArray(raw?.contentBlocks) ? raw.contentBlocks.filter((block) => block && typeof block === 'object').map((block, index) => ({
+        id: typeof block.id === 'string' && block.id.trim() ? block.id.trim() : `block-${index + 1}`,
+        type: ['paragraph', 'heading', 'image'].includes(block.type) ? block.type : 'paragraph',
+        text: typeof block.text === 'string' ? block.text.trim() : '',
+        media: typeof block.media === 'string' ? block.media.trim() : '',
+        title: typeof block.title === 'string' ? block.title.trim() : '',
+        caption: typeof block.caption === 'string' ? block.caption.trim() : '',
+        layout: ['full', 'left', 'right'].includes(block.layout) ? block.layout : 'full',
+      })) : [],
       body: typeof raw?.body === 'string' ? raw.body.trim() : content,
       author: typeof raw?.author === 'string' ? raw.author.trim() : '',
       authorRole: typeof raw?.authorRole === 'string' ? raw.authorRole.trim() : '',
@@ -2354,6 +2363,7 @@ class ContentService {
       ...post,
       featuredImage: featured,
       images: Array.isArray(post.images) ? post.images.map((image) => register(image, 'galleryImage')) : [],
+      contentBlocks: Array.isArray(post.contentBlocks) ? post.contentBlocks.map((block) => block?.type === 'image' ? { ...block, media: register(block.media, 'contentBlockImage') } : block) : [],
       seo: {
         ...(post.seo || {}),
         socialImage: register(post?.seo?.socialImage || featured, 'socialImage'),
