@@ -34,7 +34,7 @@ const rolePermissions = {
     Permissions.CONTENT_WRITE_OWN,
     Permissions.CONTENT_DELETE_OWN,
   ]),
-  [Roles.VIEWER]: new Set([Permissions.CONTENT_READ]),
+  [Roles.VIEWER]: new Set(),
   [Roles.CLIENT]: new Set(),
   [Roles.USER]: new Set(),
 };

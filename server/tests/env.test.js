@@ -60,6 +60,13 @@ describe('env frontend origins', () => {
     expect(env.FRONTEND_ORIGINS).toContain('https://legacy.example.com');
   });
 
+  it('accepts only client or user as the default public registration role', () => {
+    expect(loadEnvWith({ NODE_ENV: 'development', DEFAULT_PUBLIC_ROLE: 'user' }).DEFAULT_PUBLIC_ROLE).toBe('user');
+    expect(loadEnvWith({ NODE_ENV: 'development', DEFAULT_PUBLIC_ROLE: 'admin' }).DEFAULT_PUBLIC_ROLE).toBe('client');
+    expect(loadEnvWith({ NODE_ENV: 'development', DEFAULT_PUBLIC_ROLE: 'viewer' }).DEFAULT_PUBLIC_ROLE).toBe('client');
+    expect(loadEnvWith({ NODE_ENV: 'development', OAUTH_DEFAULT_ROLE: 'admin' }).OAUTH_DEFAULT_ROLE).toBe('client');
+  });
+
   it('keeps Google/Facebook disabled by default and does not require provider secrets', () => {
     const env = loadEnvWith({
       NODE_ENV: 'development',

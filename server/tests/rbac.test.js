@@ -9,9 +9,18 @@ describe('rbac permissions', () => {
     expect(hasPermission(Roles.ADMIN, Permissions.USER_MANAGE)).toBe(true);
   });
 
-  it('denies viewer and client cms access', () => {
-    expect(hasPermission(Roles.VIEWER, Permissions.CMS_ACCESS)).toBe(false);
-    expect(hasPermission(Roles.CLIENT, Permissions.CMS_ACCESS)).toBe(false);
+  it('denies normal users CMS access and protected CMS content reads', () => {
+    for (const role of [Roles.VIEWER, Roles.CLIENT, Roles.USER]) {
+      expect(hasPermission(role, Permissions.CMS_ACCESS)).toBe(false);
+      expect(hasPermission(role, Permissions.CONTENT_READ)).toBe(false);
+    }
+  });
+
+  it('allows admin, editor, and author to access the CMS', () => {
+    for (const role of [Roles.ADMIN, Roles.EDITOR, Roles.AUTHOR]) {
+      expect(hasPermission(role, Permissions.CMS_ACCESS)).toBe(true);
+      expect(hasPermission(role, Permissions.CONTENT_READ)).toBe(true);
+    }
   });
 
   it('allows admin cms access', () => {

@@ -119,6 +119,7 @@ class AuthService {
     oauthProviders = {},
     publicRegistrationEnabled = PUBLIC_REGISTRATION_ENABLED,
     emailPasswordAuthEnabled = ENABLE_EMAIL_PASSWORD_AUTH,
+    defaultPublicRole = DEFAULT_PUBLIC_ROLE,
     emailService = null,
     auditLogger = null,
   }) {
@@ -126,6 +127,7 @@ class AuthService {
     this.oauthProviders = oauthProviders;
     this.publicRegistrationEnabled = Boolean(publicRegistrationEnabled);
     this.emailPasswordAuthEnabled = Boolean(emailPasswordAuthEnabled);
+    this.defaultPublicRole = ['client', 'user'].includes(defaultPublicRole) ? defaultPublicRole : 'client';
     this.emailService = emailService;
     this.auditLogger = auditLogger;
   }
@@ -463,7 +465,7 @@ class AuthService {
         email,
         name,
         passwordHash,
-        role: DEFAULT_PUBLIC_ROLE,
+        role: this.defaultPublicRole,
         status: 'client',
         accountStatus: 'active',
         authProvider: 'local',

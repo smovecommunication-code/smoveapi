@@ -99,6 +99,38 @@ describe('AuthService', () => {
     expect(users[0].passwordHash).toBeTruthy();
   });
 
+  it('public registration ignores requested privileged roles and supports only configured normal roles', async () => {
+    const userRoleService = new AuthService({
+      userRepository: repository,
+      publicRegistrationEnabled: true,
+      defaultPublicRole: 'user',
+    });
+
+    const result = await userRoleService.register({
+      email: 'safe@x.com',
+      password: 'password123',
+      name: 'Safe User',
+      role: 'admin',
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.user?.role).toBe('user');
+    expect(users[0].role).toBe('user');
+  });
+
+  it('falls back to client when the configured public role is privileged', async () => {
+    const unsafeConfigService = new AuthService({
+      userRepository: repository,
+      publicRegistrationEnabled: true,
+      defaultPublicRole: 'admin',
+    });
+
+    const result = await unsafeConfigService.register({ email: 'fallback@x.com', password: 'password123', name: 'Fallback User' });
+
+    expect(result.ok).toBe(true);
+    expect(result.user?.role).toBe('client');
+  });
+
   it('user registered through public flow can log in', async () => {
     const registerEnabledService = new AuthService({ userRepository: repository, publicRegistrationEnabled: true });
 
@@ -108,6 +140,21 @@ describe('AuthService', () => {
     expect(registration.ok).toBe(true);
     expect(login.ok).toBe(true);
     expect(login.user?.email).toBe('flow@x.com');
+  });
+
+  it('login authenticates both normal and CMS roles without role gating', async () => {
+    const registerEnabledService = new AuthService({ userRepository: repository, publicRegistrationEnabled: true });
+    await registerEnabledService.register({ email: 'client@x.com', password: 'password123', name: 'Client User' });
+    await registerEnabledService.register({ email: 'admin@x.com', password: 'password123', name: 'Admin User' });
+    users.find((user) => user.email === 'admin@x.com').role = 'admin';
+
+    const clientLogin = await registerEnabledService.login({ email: 'client@x.com', password: 'password123' });
+    const adminLogin = await registerEnabledService.login({ email: 'admin@x.com', password: 'password123' });
+
+    expect(clientLogin.ok).toBe(true);
+    expect(clientLogin.user?.role).toBe('client');
+    expect(adminLogin.ok).toBe(true);
+    expect(adminLogin.user?.role).toBe('admin');
   });
 
   it('oauth links google account to existing local account by email', async () => {

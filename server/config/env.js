@@ -79,7 +79,13 @@ const PUBLIC_REGISTRATION_ENABLED = parseBoolean(
 const ENABLE_EMAIL_PASSWORD_AUTH = parseBoolean(process.env.ENABLE_EMAIL_PASSWORD_AUTH, true);
 const ENABLE_GOOGLE_LOGIN = parseBoolean(process.env.ENABLE_GOOGLE_LOGIN, false);
 const ENABLE_FACEBOOK_LOGIN = parseBoolean(process.env.ENABLE_FACEBOOK_LOGIN, false);
-const DEFAULT_PUBLIC_ROLE = (process.env.DEFAULT_PUBLIC_ROLE ?? 'client').trim().toLowerCase() === 'viewer' ? 'viewer' : 'client';
+function normalizePublicRole(value) {
+  const role = String(value ?? 'client').trim().toLowerCase();
+  return ['client', 'user'].includes(role) ? role : 'client';
+}
+
+const DEFAULT_PUBLIC_ROLE = normalizePublicRole(process.env.DEFAULT_PUBLIC_ROLE);
+const OAUTH_DEFAULT_ROLE = normalizePublicRole(process.env.OAUTH_DEFAULT_ROLE ?? DEFAULT_PUBLIC_ROLE);
 
 const CONTENT_SCHEMA_VERSION = parseIntOrDefault(process.env.CONTENT_SCHEMA_VERSION, 3);
 const MEDIA_UPLOAD_DIR = process.env.MEDIA_UPLOAD_DIR ?? path.resolve(API_SERVER_ROOT, 'data/uploads');
@@ -223,7 +229,7 @@ module.exports = {
   ADMIN_EMAIL: process.env.ADMIN_EMAIL ?? '',
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD ?? '',
   ADMIN_NAME: process.env.ADMIN_NAME ?? 'Administrator',
-  OAUTH_DEFAULT_ROLE: process.env.OAUTH_DEFAULT_ROLE ?? 'client',
+  OAUTH_DEFAULT_ROLE,
   DEFAULT_PUBLIC_ROLE,
   PUBLIC_REGISTRATION_ENABLED,
   ENABLE_EMAIL_PASSWORD_AUTH,

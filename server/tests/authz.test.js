@@ -20,6 +20,34 @@ function createRes() {
 }
 
 describe('authz middleware', () => {
+  it('returns 401 when a protected CMS permission has no authenticated session', () => {
+    const req = { appUser: null, session: null };
+    const res = createRes();
+    let nextCalled = false;
+
+    requirePermission('content:read')(req, res, () => {
+      nextCalled = true;
+    });
+
+    expect(nextCalled).toBe(false);
+    expect(res.statusCode).toBe(401);
+    expect(res.body?.error?.code).toBe('unauthenticated');
+  });
+
+  it('returns 403 when an authenticated normal user requests a CMS permission', () => {
+    const req = { appUser: { id: 'client-1', role: 'client', accountStatus: 'active' }, session: { userId: 'client-1' } };
+    const res = createRes();
+    let nextCalled = false;
+
+    requirePermission('content:read')(req, res, () => {
+      nextCalled = true;
+    });
+
+    expect(nextCalled).toBe(false);
+    expect(res.statusCode).toBe(403);
+    expect(res.body?.error?.code).toBe('forbidden');
+  });
+
   it('blocks suspended authenticated user before permission checks', () => {
     const req = {
       appUser: { id: 'u1', role: 'admin', accountStatus: 'suspended' },
