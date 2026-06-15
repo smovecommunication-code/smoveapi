@@ -527,7 +527,7 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
   router.get('/services', requirePermission(Permissions.CONTENT_READ), (req, res) =>
     sendSuccess(res, 200, { services: contentService.listServices({ organizationId: actorFromRequest(req).organizationId }) }));
 
-  router.post('/services', requirePermission(Permissions.CONTENT_WRITE), (req, res) => {
+  router.post('/services', requirePermission(Permissions.CONTENT_WRITE), async (req, res) => {
     const result = contentService.saveService(req.body, actorFromRequest(req));
     if (!result.ok) {
       const details = result.error.details ?? null;
@@ -541,11 +541,17 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       }));
       return sendError(res, 400, result.error.code, result.error.message, details);
     }
+    try {
+      await contentService.flushWrites();
+    } catch (error) {
+      logContentFailure(req, 'cms_service_save_failed', 'SERVICE_PERSIST_FAILED', { message: error?.message });
+      return sendError(res, 500, 'SERVICE_PERSIST_FAILED', 'Service could not be persisted.');
+    }
     auditService?.record(toAuditContext(req, 'cms_service_save', 'success', { entityType: 'service', entityId: result.service.id }));
     return sendSuccess(res, 200, { service: result.service });
   });
 
-  router.patch('/services/:id', requirePermission(Permissions.CONTENT_WRITE), (req, res) => {
+  router.patch('/services/:id', requirePermission(Permissions.CONTENT_WRITE), async (req, res) => {
     const actor = actorFromRequest(req);
     const existing = contentService.findServiceById(req.params.id, { organizationId: actor.organizationId });
     if (!existing) {
@@ -558,12 +564,18 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       logContentFailure(req, 'cms_service_patch_failed', result.error.code, { serviceId: req.params.id, ...(details ? { details } : {}) });
       return sendError(res, 400, result.error.code, result.error.message, details);
     }
+    try {
+      await contentService.flushWrites();
+    } catch (error) {
+      logContentFailure(req, 'cms_service_patch_failed', 'SERVICE_PERSIST_FAILED', { serviceId: req.params.id, message: error?.message });
+      return sendError(res, 500, 'SERVICE_PERSIST_FAILED', 'Service could not be persisted.');
+    }
 
     auditService?.record(toAuditContext(req, 'cms_service_patch', 'success', { entityType: 'service', entityId: result.service.id }));
     return sendSuccess(res, 200, { service: result.service });
   });
 
-  router.delete('/services/:id', requirePermission(Permissions.CONTENT_WRITE), (req, res) => {
+  router.delete('/services/:id', requirePermission(Permissions.CONTENT_WRITE), async (req, res) => {
     const actor = actorFromRequest(req);
     const service = contentService.findServiceById(req.params.id, { organizationId: actor.organizationId });
     if (!service) return sendError(res, 404, 'SERVICE_NOT_FOUND', 'Service not found.');
@@ -571,6 +583,12 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
       return sendError(res, 403, 'FORBIDDEN_OWNERSHIP', 'Authors can only delete their own services.');
     }
     contentService.deleteService(req.params.id);
+    try {
+      await contentService.flushWrites();
+    } catch (error) {
+      logContentFailure(req, 'cms_service_delete_failed', 'SERVICE_PERSIST_FAILED', { serviceId: req.params.id, message: error?.message });
+      return sendError(res, 500, 'SERVICE_PERSIST_FAILED', 'Service deletion could not be persisted.');
+    }
     auditService?.record(toAuditContext(req, 'cms_service_delete', 'success', { entityType: 'service', entityId: req.params.id }));
     return sendSuccess(res, 200, { deleted: true });
   });

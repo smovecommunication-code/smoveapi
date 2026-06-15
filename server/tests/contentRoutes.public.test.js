@@ -248,3 +248,58 @@ describe('content project mutation routes', () => {
     expect(res.body?.error?.code).toBe('PROJECT_RESPONSE_INVALID');
   });
 });
+
+describe('content service mutation durability', () => {
+  const request = {
+    body: { id: 'service-1', title: 'Service One' },
+    params: { id: 'service-1' },
+    appUser: { id: 'admin-1', role: 'admin', organizationId: 'org_default' },
+    session: { userId: 'admin-1', role: 'admin', organizationId: 'org_default' },
+    requestId: 'req-service-mutation',
+    ip: '127.0.0.1',
+    method: 'POST',
+    originalUrl: '/api/v1/content/services',
+  };
+
+  it.each([
+    ['POST', '/services', 'post'],
+    ['PATCH', '/services/:id', 'patch'],
+    ['DELETE', '/services/:id', 'delete'],
+  ])('flushes pending persistence before returning success for %s', async (method, path, methodKey) => {
+    let flushed = false;
+    const service = { id: 'service-1', title: 'Service One', slug: 'service-one', status: 'published' };
+    const router = createContentRoutes({
+      contentService: createContentService({
+        saveService: () => ({ ok: true, service }),
+        findServiceById: () => service,
+        deleteService: () => ({ ok: true }),
+        flushWrites: async () => { flushed = true; },
+      }),
+      auditService: { record: () => undefined },
+    });
+    const handler = router.stack.find((layer) => layer.route?.path === path && layer.route.methods?.[methodKey])?.route.stack.at(-1).handle;
+    const res = createRes();
+
+    await handler({ ...request, method }, res);
+
+    expect(flushed).toBe(true);
+    expect(res.statusCode).toBe(200);
+    expect(res.body?.success).toBe(true);
+  });
+
+  it('reports persistence failure instead of claiming a service save succeeded', async () => {
+    const router = createContentRoutes({
+      contentService: createContentService({
+        saveService: () => ({ ok: true, service: { id: 'service-1' } }),
+        flushWrites: async () => { throw new Error('database unavailable'); },
+      }),
+    });
+    const handler = router.stack.find((layer) => layer.route?.path === '/services' && layer.route.methods?.post)?.route.stack.at(-1).handle;
+    const res = createRes();
+
+    await handler(request, res);
+
+    expect(res.statusCode).toBe(500);
+    expect(res.body?.error?.code).toBe('SERVICE_PERSIST_FAILED');
+  });
+});
