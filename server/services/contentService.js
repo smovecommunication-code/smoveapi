@@ -2425,6 +2425,9 @@ class ContentService {
       ...service,
       iconLikeAsset: register(service.iconLikeAsset, 'iconLikeAsset'),
       representativeImage: register(service.representativeImage || service.visualMedia || service.iconLikeAsset, 'heroImage'),
+      visualMedia: register(service.visualMedia, 'heroImage'),
+      image: register(service.image, 'cardImage'),
+      media: register(service.media, 'cardImage'),
       illustrationCards: (service.illustrationCards || []).map((card) => ({ ...card, image: register(card.image, 'galleryImage') })),
       seo: {
         ...(service.seo || {}),
