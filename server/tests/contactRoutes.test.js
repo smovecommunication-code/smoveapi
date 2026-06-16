@@ -91,9 +91,11 @@ describe('contact route delivery responses', () => {
     await handler(req, res);
 
     expect(res.statusCode).toBe(200);
+    expect(res.body.ok).toBe(true);
     expect(res.body.success).toBe(true);
+    expect(res.body.message).toBeDefined();
     expect(res.body.data.status).toBeDefined();
-    expect(res.body.data.message).toContain('message');
+    expect(res.body.data.message).toBe('Message reçu avec succès.');
   });
 
   it('returns provider failure when sender throws', async () => {

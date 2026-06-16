@@ -273,9 +273,9 @@ function createApp(deps = {}) {
   });
 
   app.use('/api/v1/auth', createAuthRoutes({ authController }));
+  app.use('/api/v1/contact', createContactRoutes({ contactService }));
   app.use('/api/v1/content/messages', createMessageManagementRoutes({ contactService }));
   app.use('/api/v1/content', createContentRoutes({ contentService, auditService, mediaStorage }));
-  app.use('/api/v1/contact', createContactRoutes({ contactService }));
   app.use('/api/v1/newsletter', createNewsletterRoutes({ newsletterService }));
 
   app.use((err, req, res, _next) => {

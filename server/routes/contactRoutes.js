@@ -64,13 +64,20 @@ function createContactRoutes({ contactService }) {
         source: parsed.data.source || req.get('origin') || req.get('host') || 'website',
         requestId: req.requestId ?? null,
       });
-      return sendSuccess(res, 200, {
-        delivered: result.delivered,
-        mode: result.mode,
-        status: result.status,
-        warning: result.warning || null,
-        submissionId: result.submission.id,
-        message: result.warning ? 'Votre message a bien été enregistré. La notification email est indisponible, mais notre équipe peut le consulter.' : 'Votre message a bien été transmis. Nous revenons vers vous rapidement.',
+      const message = result.warning ? 'Votre message a bien été enregistré. La notification email est indisponible, mais notre équipe peut le consulter.' : 'Message reçu avec succès.';
+      return res.status(200).json({
+        ok: true,
+        message,
+        success: true,
+        data: {
+          delivered: result.delivered,
+          mode: result.mode,
+          status: result.status,
+          warning: result.warning || null,
+          submissionId: result.submission.id,
+          message,
+        },
+        error: null,
       });
     } catch (error) {
       logWarn('contact_email_failed', {
