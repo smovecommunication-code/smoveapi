@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
-const { createContactRoutes, createMessageManagementRoutes, validateContactPayload } = require('../routes/contactRoutes');
+const { createContactRoutes, createPublicMessageRoutes, createMessageManagementRoutes, validateContactPayload } = require('../routes/contactRoutes');
 
 function createRes() {
   return {
@@ -144,6 +144,69 @@ describe('contact route delivery responses', () => {
 
     expect(res.statusCode).toBe(500);
     expect(res.body.error.code).toBe('CONTACT_PERSISTENCE_FAILED');
+  });
+
+  it('keeps the homepage footer source for public submissions', async () => {
+    let submittedPayload = null;
+    let submittedContext = null;
+    const router = createContactRoutes({
+      contactService: {
+        submit: async (payload, context) => {
+          submittedPayload = payload;
+          submittedContext = context;
+          return { delivered: false, mode: 'disabled', status: 'disabled', warning: 'EMAIL_NOT_CONFIGURED', submission: { id: 'sub_footer' } };
+        },
+      },
+    });
+
+    const handler = router.stack[0].route.stack[0].handle;
+    const req = {
+      body: {
+        name: 'Jane Doe',
+        email: 'jane@example.com',
+        phone: '',
+        subject: 'Projet site',
+        message: 'Bonjour, je souhaite discuter de mon projet.',
+        source: 'homepage-footer',
+      },
+      get: () => 'https://www.smovecommunication.com',
+      requestId: 'req-footer',
+    };
+    const res = createRes();
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data.submissionId).toBe('sub_footer');
+    expect(submittedPayload.source).toBe('homepage-footer');
+    expect(submittedContext.source).toBe('homepage-footer');
+  });
+
+  it('exposes a public messages endpoint without auth middleware', async () => {
+    const router = createPublicMessageRoutes({
+      contactService: { submit: async () => ({ delivered: true, mode: 'resend', status: 'sent', submission: { id: 'sub_public' } }) },
+    });
+
+    expect(router.stack).toHaveLength(1);
+    expect(router.stack[0].route.path).toBe('/');
+    expect(router.stack[0].route.methods.post).toBe(true);
+
+    const req = {
+      body: {
+        name: 'Jane Doe',
+        email: 'jane@example.com',
+        subject: 'Projet site',
+        message: 'Bonjour, je souhaite discuter de mon projet.',
+        source: 'homepage-footer',
+      },
+      get: () => 'https://www.smovecommunication.com',
+    };
+    const res = createRes();
+
+    await router.stack[0].route.stack[0].handle(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data.submissionId).toBe('sub_public');
   });
 
   it('exposes admin submissions list endpoint', async () => {

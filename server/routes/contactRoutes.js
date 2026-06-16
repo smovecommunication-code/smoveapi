@@ -50,10 +50,8 @@ function validateContactPayload(body) {
   };
 }
 
-function createContactRoutes({ contactService }) {
-  const router = express.Router();
-
-  router.post('/', async (req, res) => {
+function createPublicContactPostHandler({ contactService }) {
+  return async (req, res) => {
     const parsed = validateContactPayload(req.body);
     if (!parsed.ok) {
       return sendError(res, 400, parsed.error.code, parsed.error.message);
@@ -89,7 +87,13 @@ function createContactRoutes({ contactService }) {
       }
       return sendError(res, 500, 'CONTACT_SUBMISSION_FAILED', 'Unable to store message right now. Please try again later.');
     }
-  });
+  };
+}
+
+function createContactRoutes({ contactService }) {
+  const router = express.Router();
+
+  router.post('/', createPublicContactPostHandler({ contactService }));
 
   router.use(requireAuthenticated, requirePermission(Permissions.USER_MANAGE));
 
@@ -106,6 +110,12 @@ function createContactRoutes({ contactService }) {
     return sendSuccess(res, 200, data);
   });
 
+  return router;
+}
+
+function createPublicMessageRoutes({ contactService }) {
+  const router = express.Router();
+  router.post('/', createPublicContactPostHandler({ contactService }));
   return router;
 }
 
@@ -138,4 +148,4 @@ function createMessageManagementRoutes({ contactService }) {
   return router;
 }
 
-module.exports = { createContactRoutes, createMessageManagementRoutes, validateContactPayload };
+module.exports = { createContactRoutes, createPublicMessageRoutes, createMessageManagementRoutes, validateContactPayload };

@@ -29,7 +29,7 @@ const { AuthService } = require('./services/authService');
 const { buildAuthController } = require('./controllers/authController');
 const { createAuthRoutes } = require('./routes/authRoutes');
 const { createContentRoutes } = require('./routes/contentRoutes');
-const { createContactRoutes, createMessageManagementRoutes } = require('./routes/contactRoutes');
+const { createContactRoutes, createPublicMessageRoutes, createMessageManagementRoutes } = require('./routes/contactRoutes');
 const { createNewsletterRoutes } = require('./routes/newsletterRoutes');
 const { sendError } = require('./utils/apiResponse');
 const { FileContentRepository } = require('./repositories/contentRepository.file');
@@ -274,6 +274,7 @@ function createApp(deps = {}) {
 
   app.use('/api/v1/auth', createAuthRoutes({ authController }));
   app.use('/api/v1/contact', createContactRoutes({ contactService }));
+  app.use('/api/v1/messages/public', createPublicMessageRoutes({ contactService }));
   app.use('/api/v1/content/messages', createMessageManagementRoutes({ contactService }));
   app.use('/api/v1/content', createContentRoutes({ contentService, auditService, mediaStorage }));
   app.use('/api/v1/newsletter', createNewsletterRoutes({ newsletterService }));
