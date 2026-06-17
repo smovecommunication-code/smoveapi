@@ -545,13 +545,6 @@ class ContentService {
     if (existing && !this.canMutateEntity(actorContext, existing, 'write')) {
       return { ok: false, error: { code: 'FORBIDDEN_OWNERSHIP', message: 'Cannot modify content owned by another user.' } };
     }
-    if (normalized.status === 'published') {
-      const publishability = this.evaluatePublishability(normalized);
-      if (!publishability.ok) {
-        return { ok: false, error: { code: 'BLOG_NOT_PUBLISHABLE', message: publishability.message } };
-      }
-    }
-
     if (duplicateSlug) {
       return { ok: false, error: { code: 'BLOG_SLUG_CONFLICT', message: 'Slug already exists.' } };
     }
@@ -1974,7 +1967,7 @@ class ContentService {
       phone: requiredTrimmed(member?.phone),
       socialLinks,
       order: Number.isFinite(Number(member?.order)) ? Number(member.order) : 0,
-      status: TEAM_STATUSES.has(member?.status) ? member.status : 'draft',
+      status: TEAM_STATUSES.has(member?.status) ? member.status : 'published',
       featured: Boolean(member?.featured),
       createdAt: member?.createdAt || nowIso,
       updatedAt: nowIso,
