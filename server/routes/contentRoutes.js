@@ -249,7 +249,8 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
   router.get('/public/team', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     const members = contentService.listTeamMembers()
-      .filter((member) => isPublishedOrLegacy(member.status));
+      .filter((member) => isPublishedOrLegacy(member.status))
+      .sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
     return sendSuccess(res, 200, { team: normalizeMediaPayload(members, contentService.listMediaFiles()) });
   });
   router.get('/public/settings', (_req, res) => {
