@@ -246,6 +246,12 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
     res.setHeader('Cache-Control', 'no-store');
     return sendSuccess(res, 200, { post: normalizeMediaPayload(post, contentService.listMediaFiles()) });
   });
+  router.get('/public/team', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const members = contentService.listTeamMembers()
+      .filter((member) => isPublishedOrLegacy(member.status));
+    return sendSuccess(res, 200, { team: normalizeMediaPayload(members, contentService.listMediaFiles()) });
+  });
   router.get('/public/settings', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     return sendSuccess(res, 200, { settings: normalizeMediaPayload(contentService.getPublicSettings(), contentService.listMediaFiles()) });
@@ -521,6 +527,40 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
     }
     contentService.deleteProject(req.params.id);
     auditService?.record(toAuditContext(req, 'cms_project_delete', 'success', { entityType: 'project', entityId: req.params.id }));
+    return sendSuccess(res, 200, { deleted: true });
+  });
+
+
+  router.get('/team', requirePermission(Permissions.CONTENT_READ), (req, res) =>
+    sendSuccess(res, 200, { team: contentService.listTeamMembers({ organizationId: actorFromRequest(req).organizationId }) }));
+
+  router.post('/team', requirePermission(Permissions.CONTENT_WRITE), async (req, res) => {
+    const result = contentService.saveTeamMember(req.body, actorFromRequest(req));
+    if (!result.ok) return sendError(res, 400, result.error.code, result.error.message);
+    await contentService.flushWrites();
+    auditService?.record(toAuditContext(req, 'cms_team_save', 'success', { entityType: 'team_member', entityId: result.member.id }));
+    return sendSuccess(res, 201, { member: result.member });
+  });
+
+  router.patch('/team/:id', requirePermission(Permissions.CONTENT_WRITE), async (req, res) => {
+    const actor = actorFromRequest(req);
+    const existing = contentService.findTeamMemberById(req.params.id, { organizationId: actor.organizationId });
+    if (!existing) return sendError(res, 404, 'TEAM_MEMBER_NOT_FOUND', 'Team member not found.');
+    const result = contentService.saveTeamMember(mergePatch(existing, { ...req.body, id: req.params.id }), actor);
+    if (!result.ok) return sendError(res, 400, result.error.code, result.error.message);
+    await contentService.flushWrites();
+    auditService?.record(toAuditContext(req, 'cms_team_patch', 'success', { entityType: 'team_member', entityId: result.member.id }));
+    return sendSuccess(res, 200, { member: result.member });
+  });
+
+  router.delete('/team/:id', requirePermission(Permissions.CONTENT_WRITE), async (req, res) => {
+    const actor = actorFromRequest(req);
+    const member = contentService.findTeamMemberById(req.params.id, { organizationId: actor.organizationId });
+    if (!member) return sendError(res, 404, 'TEAM_MEMBER_NOT_FOUND', 'Team member not found.');
+    if (actor.role === 'author' && member.ownerUserId !== actor.userId) return sendError(res, 403, 'FORBIDDEN_OWNERSHIP', 'Authors can only delete their own team members.');
+    contentService.deleteTeamMember(req.params.id);
+    await contentService.flushWrites();
+    auditService?.record(toAuditContext(req, 'cms_team_delete', 'success', { entityType: 'team_member', entityId: req.params.id }));
     return sendSuccess(res, 200, { deleted: true });
   });
 

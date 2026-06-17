@@ -62,7 +62,7 @@ function createPublicContactPostHandler({ contactService }) {
         source: parsed.data.source || req.get('origin') || req.get('host') || 'website',
         requestId: req.requestId ?? null,
       });
-      const message = result.warning ? 'Votre message a bien été enregistré. La notification email est indisponible, mais notre équipe peut le consulter.' : 'Message reçu avec succès.';
+      const message = result.warning ? 'Votre message a bien été envoyée nous vous contacterons sous peu. Merci!.' : 'Message reçu avec succès.';
       return res.status(200).json({
         ok: true,
         message,

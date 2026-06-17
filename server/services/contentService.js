@@ -20,6 +20,7 @@ const BLOG_STATUSES = new Set(['draft', 'in_review', 'published', 'archived']);
 const MEDIA_TYPES = new Set(['image', 'video', 'document', 'file']);
 const PROJECT_STATUSES = new Set(['draft', 'in_review', 'published', 'archived']);
 const SERVICE_STATUSES = new Set(['draft', 'published', 'archived']);
+const TEAM_STATUSES = new Set(['draft', 'published', 'archived']);
 const SERVICE_ICONS = new Set(['palette', 'code', 'megaphone', 'video', 'box']);
 const COLOR_GRADIENT_PATTERN = /^from-\[#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})\]\s+to-\[#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})\]$/;
 const MEDIA_ROLE_PRESETS = new Set(['cardImage', 'heroImage', 'coverImage', 'socialImage', 'galleryImage', 'iconLikeAsset', 'brandLogo', 'favicon']);
@@ -444,6 +445,7 @@ class ContentService {
           projects: [],
           mediaFiles: [],
           services: [],
+          teamMembers: [],
           pageContent: null,
           settings: null,
           analyticsEvents: [],
@@ -845,6 +847,48 @@ class ContentService {
   deleteProject(id) {
     const state = this.readState();
     state.projects = this.listProjects().filter((entry) => entry.id !== id);
+    this.writeState(state);
+    return { ok: true };
+  }
+
+
+  listTeamMembers(options = {}) {
+    const state = this.readState();
+    const entries = Array.isArray(state.teamMembers)
+      ? state.teamMembers.map((member) => this.normalizeTeamMember(member)).filter((member) => this.validateTeamMember(member))
+      : [];
+    return this.scopeByOrganization(entries, options.organizationId)
+      .sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || a.name.localeCompare(b.name, 'fr'));
+  }
+
+  findTeamMemberById(id, options = {}) {
+    return this.listTeamMembers(options).find((entry) => entry.id === id) || null;
+  }
+
+  saveTeamMember(member, actor = {}) {
+    const actorContext = this.normalizeActorContext(actor);
+    const state = this.readState();
+    const normalized = this.normalizeTeamMember(member, actorContext);
+    if (!this.validateTeamMember(normalized)) {
+      return { ok: false, error: { code: 'TEAM_VALIDATION_ERROR', message: 'Invalid team member payload.' } };
+    }
+    const members = this.listTeamMembers({ organizationId: actorContext.organizationId });
+    const existing = members.find((entry) => entry.id === normalized.id);
+    if (existing && !this.canMutateEntity(actorContext, existing, 'write')) {
+      return { ok: false, error: { code: 'FORBIDDEN_OWNERSHIP', message: 'Cannot modify team member owned by another user.' } };
+    }
+    const index = members.findIndex((entry) => entry.id === normalized.id);
+    if (index >= 0) members[index] = normalized;
+    else members.push(normalized);
+    const globalMembers = this.listTeamMembers().filter((entry) => (entry.organizationId || DEFAULT_ORGANIZATION_ID) !== actorContext.organizationId);
+    state.teamMembers = [...globalMembers, ...members];
+    this.writeState(state);
+    return { ok: true, member: normalized };
+  }
+
+  deleteTeamMember(id) {
+    const state = this.readState();
+    state.teamMembers = this.listTeamMembers().filter((entry) => entry.id !== id);
     this.writeState(state);
     return { ok: true };
   }
@@ -1905,6 +1949,60 @@ class ContentService {
       updatedBy: actor.userId || (typeof project?.updatedBy === 'string' ? project.updatedBy : 'system'),
     };
   }
+
+  normalizeTeamMember(member, actor = {}) {
+    const nowIso = new Date().toISOString();
+    const id = requiredTrimmed(member?.id) || `team_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+    const socialLinks = Array.isArray(member?.socialLinks)
+      ? member.socialLinks
+          .map((link) => ({
+            platform: requiredTrimmed(link?.platform).toLowerCase(),
+            label: requiredTrimmed(link?.label) || requiredTrimmed(link?.platform),
+            url: requiredTrimmed(link?.url),
+          }))
+          .filter((link) => link.platform && link.label && isValidOptionalHttpUrl(link.url))
+      : [];
+
+    return {
+      ...member,
+      id,
+      name: requiredTrimmed(member?.name),
+      role: requiredTrimmed(member?.role),
+      bio: requiredTrimmed(member?.bio),
+      photo: requiredTrimmed(member?.photo),
+      email: requiredTrimmed(member?.email),
+      phone: requiredTrimmed(member?.phone),
+      socialLinks,
+      order: Number.isFinite(Number(member?.order)) ? Number(member.order) : 0,
+      status: TEAM_STATUSES.has(member?.status) ? member.status : 'draft',
+      featured: Boolean(member?.featured),
+      createdAt: member?.createdAt || nowIso,
+      updatedAt: nowIso,
+      ownerUserId: requiredTrimmed(member?.ownerUserId) || actor.userId || 'system',
+      organizationId: requiredTrimmed(member?.organizationId).toLowerCase() || actor.organizationId || DEFAULT_ORGANIZATION_ID,
+      updatedBy: actor.userId || requiredTrimmed(member?.updatedBy) || 'system',
+    };
+  }
+
+  validateTeamMember(member) {
+    const photo = requiredTrimmed(member?.photo);
+    return Boolean(
+      member &&
+        requiredTrimmed(member.id) &&
+        requiredTrimmed(member.name) &&
+        requiredTrimmed(member.role) &&
+        typeof member.bio === 'string' &&
+        (!photo || this.isValidMediaLink(photo)) &&
+        (member.email === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.email)) &&
+        Array.isArray(member.socialLinks) &&
+        member.socialLinks.every((link) => requiredTrimmed(link.platform) && requiredTrimmed(link.label) && isValidOptionalHttpUrl(link.url)) &&
+        Number.isFinite(Number(member.order)) &&
+        TEAM_STATUSES.has(member.status) &&
+        requiredTrimmed(member.ownerUserId) &&
+        requiredTrimmed(member.organizationId)
+    );
+  }
+
 
   validateProject(project) {
     const isOptionalMediaLink = (value) => {
