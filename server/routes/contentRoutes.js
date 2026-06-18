@@ -536,11 +536,35 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
     sendSuccess(res, 200, { team: contentService.listTeamMembers({ organizationId: actorFromRequest(req).organizationId }) }));
 
   router.post('/team', requirePermission(Permissions.CONTENT_WRITE), async (req, res) => {
-    const result = contentService.saveTeamMember(req.body, actorFromRequest(req));
+    const actor = actorFromRequest(req);
+    const result = contentService.saveTeamMember(req.body, actor);
     if (!result.ok) return sendError(res, 400, result.error.code, result.error.message);
-    await contentService.flushWrites();
-    auditService?.record(toAuditContext(req, 'cms_team_save', 'success', { entityType: 'team_member', entityId: result.member.id }));
-    return sendSuccess(res, 201, { member: result.member });
+
+    try {
+      await contentService.flushWrites();
+    } catch (error) {
+      logContentFailure(req, 'cms_team_save_failed', 'TEAM_PERSIST_FAILED', { message: error?.message });
+      auditService?.record(toAuditContext(req, 'cms_team_save', 'failure', {
+        entityType: 'team_member',
+        entityId: result.member?.id ?? null,
+        metadata: { code: 'TEAM_PERSIST_FAILED' },
+      }));
+      return sendError(res, 500, 'TEAM_PERSIST_FAILED', 'Team member could not be persisted.');
+    }
+
+    const persistedMember = contentService.findTeamMemberById(result.member.id, { organizationId: actor.organizationId });
+    if (!persistedMember?.id) {
+      logContentFailure(req, 'cms_team_save_failed', 'TEAM_RESPONSE_INVALID', { memberId: result.member?.id ?? null });
+      auditService?.record(toAuditContext(req, 'cms_team_save', 'failure', {
+        entityType: 'team_member',
+        entityId: result.member?.id ?? null,
+        metadata: { code: 'TEAM_RESPONSE_INVALID' },
+      }));
+      return sendError(res, 500, 'TEAM_RESPONSE_INVALID', 'Team member was saved but is not visible in the persisted team list.');
+    }
+
+    auditService?.record(toAuditContext(req, 'cms_team_save', 'success', { entityType: 'team_member', entityId: persistedMember.id }));
+    return sendSuccess(res, 201, { member: persistedMember });
   });
 
   router.patch('/team/:id', requirePermission(Permissions.CONTENT_WRITE), async (req, res) => {
@@ -549,9 +573,22 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
     if (!existing) return sendError(res, 404, 'TEAM_MEMBER_NOT_FOUND', 'Team member not found.');
     const result = contentService.saveTeamMember(mergePatch(existing, { ...req.body, id: req.params.id }), actor);
     if (!result.ok) return sendError(res, 400, result.error.code, result.error.message);
-    await contentService.flushWrites();
-    auditService?.record(toAuditContext(req, 'cms_team_patch', 'success', { entityType: 'team_member', entityId: result.member.id }));
-    return sendSuccess(res, 200, { member: result.member });
+
+    try {
+      await contentService.flushWrites();
+    } catch (error) {
+      logContentFailure(req, 'cms_team_patch_failed', 'TEAM_PERSIST_FAILED', { memberId: req.params.id, message: error?.message });
+      return sendError(res, 500, 'TEAM_PERSIST_FAILED', 'Team member could not be persisted.');
+    }
+
+    const persistedMember = contentService.findTeamMemberById(result.member.id, { organizationId: actor.organizationId });
+    if (!persistedMember?.id) {
+      logContentFailure(req, 'cms_team_patch_failed', 'TEAM_RESPONSE_INVALID', { memberId: req.params.id });
+      return sendError(res, 500, 'TEAM_RESPONSE_INVALID', 'Team member was saved but is not visible in the persisted team list.');
+    }
+
+    auditService?.record(toAuditContext(req, 'cms_team_patch', 'success', { entityType: 'team_member', entityId: persistedMember.id }));
+    return sendSuccess(res, 200, { member: persistedMember });
   });
 
   router.delete('/team/:id', requirePermission(Permissions.CONTENT_WRITE), async (req, res) => {
