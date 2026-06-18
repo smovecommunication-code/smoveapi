@@ -2014,3 +2014,36 @@ describe('ContentService canonical media registration', () => {
     expect(files[0].variants?.social?.url).toBeTruthy();
   });
 });
+describe('ContentService team member persistence', () => {
+  it('reads legacy team aliases through the canonical teamMembers store', () => {
+    const service = new ContentService({
+      contentRepository: new MemoryContentRepository({
+        teamMembers: [],
+        members: [{ id: 'legacy-1', name: 'Legacy Member', role: 'Lead', bio: '', status: 'published' }],
+      }),
+    });
+
+    expect(service.listTeamMembers().map((member) => member.id)).toContain('legacy-1');
+    expect(service.findTeamMemberById('legacy-1')?.name).toBe('Legacy Member');
+  });
+
+  it('saves and deletes team members from the same teamMembers array that lists read', () => {
+    const repo = new MemoryContentRepository({ members: [] });
+    const service = new ContentService({ contentRepository: repo });
+
+    const created = service.saveTeamMember(
+      { id: 'team-created-1', name: 'Ada Lovelace', role: 'Backend Lead', bio: '', status: 'published' },
+      { userId: 'admin-1', role: 'admin', organizationId: 'org_default' },
+    );
+
+    expect(created.ok).toBe(true);
+    expect(service.findTeamMemberById('team-created-1', { organizationId: 'org_default' })?.id).toBe('team-created-1');
+    expect(repo.getState().teamMembers.some((member) => member.id === 'team-created-1')).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(repo.getState(), 'members')).toBe(false);
+
+    service.deleteTeamMember('team-created-1');
+
+    expect(service.findTeamMemberById('team-created-1')).toBeNull();
+    expect(repo.getState().teamMembers.some((member) => member.id === 'team-created-1')).toBe(false);
+  });
+});

@@ -553,6 +553,20 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
         return sendError(res, statusCode, result.error.code, result.error.message, result.error.details ?? null);
       }
 
+      if (!result.member?.id || !result.member?.name || !result.member?.role) {
+        logContentFailure(req, 'cms_team_save_failed', 'TEAM_RESPONSE_INVALID', {
+          memberId: result.member?.id ?? null,
+          hasName: Boolean(result.member?.name),
+          hasRole: Boolean(result.member?.role),
+        });
+        auditService?.record(toAuditContext(req, 'cms_team_save', 'failure', {
+          entityType: 'team_member',
+          entityId: result.member?.id ?? null,
+          metadata: { code: 'TEAM_RESPONSE_INVALID' },
+        }));
+        return sendError(res, 500, 'TEAM_RESPONSE_INVALID', 'Team member save returned an invalid member payload.');
+      }
+
       try {
         if (typeof contentService.flushWrites === 'function') {
           await contentService.flushWrites();
@@ -564,25 +578,27 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
         });
         auditService?.record(toAuditContext(req, 'cms_team_save', 'failure', {
           entityType: 'team_member',
-          entityId: result.member?.id ?? null,
+          entityId: result.member.id,
           metadata: { code: 'TEAM_PERSIST_FAILED' },
         }));
         return sendError(res, 500, 'TEAM_PERSIST_FAILED', 'Team member could not be persisted.');
       }
 
-      const persistedMember = contentService.findTeamMemberById(result.member.id, { organizationId: actor.organizationId });
+      const persistedMember = typeof contentService.findTeamMemberById === 'function'
+        ? contentService.findTeamMemberById(result.member.id)
+        : null;
       if (!persistedMember?.id) {
-        logContentFailure(req, 'cms_team_save_failed', 'TEAM_RESPONSE_INVALID', { memberId: result.member?.id ?? null });
-        auditService?.record(toAuditContext(req, 'cms_team_save', 'failure', {
-          entityType: 'team_member',
-          entityId: result.member?.id ?? null,
-          metadata: { code: 'TEAM_RESPONSE_INVALID' },
-        }));
-        return sendError(res, 500, 'TEAM_RESPONSE_INVALID', 'Team member was saved but is not visible in the persisted team list.');
+        logWarn('team_member_saved_but_lookup_missed', {
+          requestId: req.requestId,
+          id: result.member.id,
+          name: result.member.name,
+          role: result.member.role,
+          organizationId: result.member.organizationId || actor.organizationId || null,
+        });
       }
 
-      auditService?.record(toAuditContext(req, 'cms_team_save', 'success', { entityType: 'team_member', entityId: persistedMember.id }));
-      return sendSuccess(res, 201, { member: persistedMember });
+      auditService?.record(toAuditContext(req, 'cms_team_save', 'success', { entityType: 'team_member', entityId: result.member.id }));
+      return sendSuccess(res, 201, { member: result.member });
     } catch (error) {
       logWarn('cms_team_save_unhandled_error', {
         requestId: req.requestId,

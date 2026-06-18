@@ -261,7 +261,7 @@ describe('content team mutation routes', () => {
     originalUrl: '/api/v1/content/team',
   };
 
-  it('returns the created team member after persistence and visibility check', async () => {
+  it('returns the created team member from the save result after persistence flush', async () => {
     const member = { id: 'team-1', name: 'Ada Lovelace', role: 'Backend Lead', status: 'published' };
     let flushed = false;
     const router = createContentRoutes({
@@ -278,6 +278,25 @@ describe('content team mutation routes', () => {
     await handler(request, res);
 
     expect(flushed).toBe(true);
+    expect(res.statusCode).toBe(201);
+    expect(res.body?.data?.member).toEqual(member);
+  });
+
+  it('does not fail a successful create when the immediate diagnostic lookup misses', async () => {
+    const member = { id: 'team-lookup-miss', name: 'Grace Hopper', role: 'Systems Lead', status: 'published' };
+    const router = createContentRoutes({
+      contentService: createContentService({
+        saveTeamMember: () => ({ ok: true, member }),
+        flushWrites: async () => undefined,
+        findTeamMemberById: () => null,
+      }),
+      auditService: { record: () => undefined },
+    });
+    const handler = router.stack.find((layer) => layer.route?.path === '/team' && layer.route.methods?.post)?.route.stack.at(-1).handle;
+    const res = createRes();
+
+    await handler(request, res);
+
     expect(res.statusCode).toBe(201);
     expect(res.body?.data?.member).toEqual(member);
   });

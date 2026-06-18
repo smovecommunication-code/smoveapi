@@ -10,6 +10,7 @@ function createContentStateModel(mongoose) {
       projects: { type: Array, default: [] },
       mediaFiles: { type: Array, default: [] },
       services: { type: Array, default: [] },
+      teamMembers: { type: Array, default: [] },
       pageContent: { type: Object, default: null },
       settings: { type: Object, default: null },
       settingsHistory: { type: Array, default: [] },

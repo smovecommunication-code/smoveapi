@@ -12,6 +12,7 @@ const defaultState = {
   projects: [],
   mediaFiles: [],
   services: [],
+  teamMembers: [],
   pageContent: null,
   settings: null,
   settingsHistory: [],
@@ -29,6 +30,11 @@ function ensureStore() {
   }
 }
 
+function extractTeamMembers(candidate = {}) {
+  const aliases = [candidate.teamMembers, candidate.members, candidate.team, candidate.teams, candidate.staff, candidate.personnel];
+  return aliases.find((value) => Array.isArray(value) && value.length > 0) || (Array.isArray(candidate.teamMembers) ? candidate.teamMembers : []);
+}
+
 function normalizeState(candidate = {}) {
   return {
     schemaVersion: Number(candidate.schemaVersion) || 1,
@@ -36,6 +42,7 @@ function normalizeState(candidate = {}) {
     projects: Array.isArray(candidate.projects) ? candidate.projects : [],
     mediaFiles: Array.isArray(candidate.mediaFiles) ? candidate.mediaFiles : [],
     services: Array.isArray(candidate.services) ? candidate.services : [],
+    teamMembers: extractTeamMembers(candidate),
     pageContent: candidate.pageContent && typeof candidate.pageContent === 'object' ? candidate.pageContent : null,
     settings: candidate.settings && typeof candidate.settings === 'object' ? candidate.settings : null,
     settingsHistory: Array.isArray(candidate.settingsHistory) ? candidate.settingsHistory : [],

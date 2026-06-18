@@ -29,6 +29,7 @@ const MANAGED_BLOG_TAGS = ['React', 'Web Design', 'Performance', 'Innovation', '
 const DEFAULT_ORGANIZATION_ID = 'org_default';
 const MEDIA_VARIANT_KEYS = ['thumbnail', 'card', 'hero', 'social', 'original'];
 const HTTP_SCHEME_PATTERN = /^[a-zA-Z][a-zA-Z\d+.-]*:/;
+const TEAM_MEMBER_STATE_KEYS = ['teamMembers', 'members', 'team', 'teams', 'staff', 'personnel'];
 
 const defaultHomePageContent = {
   heroBadge: 'Agence de communication',
@@ -432,6 +433,18 @@ const defaultSettings = {
 };
 
 class ContentService {
+  canonicalTeamMembersFromState(state = {}) {
+    const key = TEAM_MEMBER_STATE_KEYS.find((entry) => Array.isArray(state[entry]) && state[entry].length > 0);
+    return key ? state[key] : (Array.isArray(state.teamMembers) ? state.teamMembers : []);
+  }
+
+  setCanonicalTeamMembersState(state, members) {
+    for (const key of TEAM_MEMBER_STATE_KEYS) {
+      if (key !== 'teamMembers') delete state[key];
+    }
+    state.teamMembers = Array.isArray(members) ? members : [];
+  }
+
   constructor({ contentRepository }) {
     this.contentRepository = contentRepository;
     this.seedProjectsFromLegacy();
@@ -847,9 +860,9 @@ class ContentService {
 
   listTeamMembers(options = {}) {
     const state = this.readState();
-    const entries = Array.isArray(state.teamMembers)
-      ? state.teamMembers.map((member) => this.normalizeTeamMember(member)).filter((member) => this.validateTeamMember(member))
-      : [];
+    const entries = this.canonicalTeamMembersFromState(state)
+      .map((member) => this.normalizeTeamMember(member))
+      .filter((member) => this.validateTeamMember(member));
     return this.scopeByOrganization(entries, options.organizationId)
       .sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || a.name.localeCompare(b.name, 'fr'));
   }
@@ -865,23 +878,28 @@ class ContentService {
     if (!this.validateTeamMember(normalized)) {
       return { ok: false, error: { code: 'TEAM_VALIDATION_ERROR', message: 'Invalid team member payload.' } };
     }
-    const members = this.listTeamMembers({ organizationId: actorContext.organizationId });
+    const allMembers = this.canonicalTeamMembersFromState(state)
+      .map((entry) => this.normalizeTeamMember(entry))
+      .filter((entry) => this.validateTeamMember(entry));
+    const members = this.scopeByOrganization(allMembers, actorContext.organizationId);
     const existing = members.find((entry) => entry.id === normalized.id);
     if (existing && !this.canMutateEntity(actorContext, existing, 'write')) {
       return { ok: false, error: { code: 'FORBIDDEN_OWNERSHIP', message: 'Cannot modify team member owned by another user.' } };
     }
-    const index = members.findIndex((entry) => entry.id === normalized.id);
-    if (index >= 0) members[index] = normalized;
-    else members.push(normalized);
-    const globalMembers = this.listTeamMembers().filter((entry) => (entry.organizationId || DEFAULT_ORGANIZATION_ID) !== actorContext.organizationId);
-    state.teamMembers = [...globalMembers, ...members];
+    const index = allMembers.findIndex((entry) => entry.id === normalized.id);
+    if (index >= 0) allMembers[index] = normalized;
+    else allMembers.push(normalized);
+    this.setCanonicalTeamMembersState(state, allMembers);
     this.writeState(state);
     return { ok: true, member: normalized };
   }
 
   deleteTeamMember(id) {
     const state = this.readState();
-    state.teamMembers = this.listTeamMembers().filter((entry) => entry.id !== id);
+    const remainingMembers = this.canonicalTeamMembersFromState(state)
+      .map((entry) => this.normalizeTeamMember(entry))
+      .filter((entry) => this.validateTeamMember(entry) && entry.id !== id);
+    this.setCanonicalTeamMembersState(state, remainingMembers);
     this.writeState(state);
     return { ok: true };
   }
