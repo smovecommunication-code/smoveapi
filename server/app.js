@@ -255,6 +255,9 @@ function createApp(deps = {}) {
     const sessionStoreReady = Boolean(sessionInit.storeMeta?.mode);
     const ready = Boolean(mongoState.connected) && sessionStoreReady;
     const payload = {
+      status: ready ? 'ok' : 'degraded',
+      db: mongoState.connected ? 'connected' : 'disconnected',
+      sessions: sessionStoreReady ? 'ready' : 'not_ready',
       ready,
       dependencies: {
         mongo: mongoState,
