@@ -537,34 +537,65 @@ function createContentRoutes({ contentService, auditService, mediaStorage }) {
 
   router.post('/team', requirePermission(Permissions.CONTENT_WRITE), async (req, res) => {
     const actor = actorFromRequest(req);
-    const result = contentService.saveTeamMember(req.body, actor);
-    if (!result.ok) return sendError(res, 400, result.error.code, result.error.message);
 
     try {
-      await contentService.flushWrites();
+      const result = contentService.saveTeamMember(req.body, actor);
+      if (!result.ok) {
+        const statusCode = result.error.code === 'FORBIDDEN_OWNERSHIP' ? 403 : 400;
+        logContentFailure(req, 'cms_team_save_validation_failed', result.error.code, {
+          details: result.error.details ?? null,
+        });
+        auditService?.record(toAuditContext(req, 'cms_team_save', 'failure', {
+          entityType: 'team_member',
+          entityId: req.body?.id ?? null,
+          metadata: { code: result.error.code },
+        }));
+        return sendError(res, statusCode, result.error.code, result.error.message, result.error.details ?? null);
+      }
+
+      try {
+        if (typeof contentService.flushWrites === 'function') {
+          await contentService.flushWrites();
+        }
+      } catch (error) {
+        logContentFailure(req, 'cms_team_save_failed', 'TEAM_PERSIST_FAILED', {
+          message: error?.message,
+          stack: error?.stack,
+        });
+        auditService?.record(toAuditContext(req, 'cms_team_save', 'failure', {
+          entityType: 'team_member',
+          entityId: result.member?.id ?? null,
+          metadata: { code: 'TEAM_PERSIST_FAILED' },
+        }));
+        return sendError(res, 500, 'TEAM_PERSIST_FAILED', 'Team member could not be persisted.');
+      }
+
+      const persistedMember = contentService.findTeamMemberById(result.member.id, { organizationId: actor.organizationId });
+      if (!persistedMember?.id) {
+        logContentFailure(req, 'cms_team_save_failed', 'TEAM_RESPONSE_INVALID', { memberId: result.member?.id ?? null });
+        auditService?.record(toAuditContext(req, 'cms_team_save', 'failure', {
+          entityType: 'team_member',
+          entityId: result.member?.id ?? null,
+          metadata: { code: 'TEAM_RESPONSE_INVALID' },
+        }));
+        return sendError(res, 500, 'TEAM_RESPONSE_INVALID', 'Team member was saved but is not visible in the persisted team list.');
+      }
+
+      auditService?.record(toAuditContext(req, 'cms_team_save', 'success', { entityType: 'team_member', entityId: persistedMember.id }));
+      return sendSuccess(res, 201, { member: persistedMember });
     } catch (error) {
-      logContentFailure(req, 'cms_team_save_failed', 'TEAM_PERSIST_FAILED', { message: error?.message });
+      logWarn('cms_team_save_unhandled_error', {
+        requestId: req.requestId,
+        message: error?.message,
+        stack: error?.stack,
+      });
       auditService?.record(toAuditContext(req, 'cms_team_save', 'failure', {
         entityType: 'team_member',
-        entityId: result.member?.id ?? null,
-        metadata: { code: 'TEAM_PERSIST_FAILED' },
+        entityId: req.body?.id ?? null,
+        metadata: { code: 'TEAM_SAVE_FAILED' },
       }));
-      return sendError(res, 500, 'TEAM_PERSIST_FAILED', 'Team member could not be persisted.');
+      return sendError(res, 500, 'TEAM_SAVE_FAILED', 'Team member could not be saved.');
     }
-
-    const persistedMember = contentService.findTeamMemberById(result.member.id, { organizationId: actor.organizationId });
-    if (!persistedMember?.id) {
-      logContentFailure(req, 'cms_team_save_failed', 'TEAM_RESPONSE_INVALID', { memberId: result.member?.id ?? null });
-      auditService?.record(toAuditContext(req, 'cms_team_save', 'failure', {
-        entityType: 'team_member',
-        entityId: result.member?.id ?? null,
-        metadata: { code: 'TEAM_RESPONSE_INVALID' },
-      }));
-      return sendError(res, 500, 'TEAM_RESPONSE_INVALID', 'Team member was saved but is not visible in the persisted team list.');
-    }
-
-    auditService?.record(toAuditContext(req, 'cms_team_save', 'success', { entityType: 'team_member', entityId: persistedMember.id }));
-    return sendSuccess(res, 201, { member: persistedMember });
   });
 
   router.patch('/team/:id', requirePermission(Permissions.CONTENT_WRITE), async (req, res) => {

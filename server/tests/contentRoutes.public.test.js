@@ -249,6 +249,72 @@ describe('content project mutation routes', () => {
   });
 });
 
+
+describe('content team mutation routes', () => {
+  const request = {
+    body: { name: 'Ada Lovelace', role: 'Backend Lead', bio: '', status: 'published' },
+    appUser: { id: 'admin-1', role: 'admin', organizationId: 'org_default' },
+    session: { userId: 'admin-1', role: 'admin', organizationId: 'org_default' },
+    requestId: 'req-team-create',
+    ip: '127.0.0.1',
+    method: 'POST',
+    originalUrl: '/api/v1/content/team',
+  };
+
+  it('returns the created team member after persistence and visibility check', async () => {
+    const member = { id: 'team-1', name: 'Ada Lovelace', role: 'Backend Lead', status: 'published' };
+    let flushed = false;
+    const router = createContentRoutes({
+      contentService: createContentService({
+        saveTeamMember: () => ({ ok: true, member }),
+        flushWrites: async () => { flushed = true; },
+        findTeamMemberById: () => member,
+      }),
+      auditService: { record: () => undefined },
+    });
+    const handler = router.stack.find((layer) => layer.route?.path === '/team' && layer.route.methods?.post)?.route.stack.at(-1).handle;
+    const res = createRes();
+
+    await handler(request, res);
+
+    expect(flushed).toBe(true);
+    expect(res.statusCode).toBe(201);
+    expect(res.body?.data?.member).toEqual(member);
+  });
+
+  it('returns validation failures as safe client errors instead of generic 500s', async () => {
+    const router = createContentRoutes({
+      contentService: createContentService({
+        saveTeamMember: () => ({ ok: false, error: { code: 'TEAM_VALIDATION_ERROR', message: 'Invalid team member payload.' } }),
+      }),
+      auditService: { record: () => undefined },
+    });
+    const handler = router.stack.find((layer) => layer.route?.path === '/team' && layer.route.methods?.post)?.route.stack.at(-1).handle;
+    const res = createRes();
+
+    await handler({ ...request, body: { role: '' } }, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body?.error?.code).toBe('TEAM_VALIDATION_ERROR');
+  });
+
+  it('logs unhandled backend failures and returns a stable team save error', async () => {
+    const router = createContentRoutes({
+      contentService: createContentService({
+        saveTeamMember: () => { throw new Error('saveTeamMember undefined'); },
+      }),
+      auditService: { record: () => undefined },
+    });
+    const handler = router.stack.find((layer) => layer.route?.path === '/team' && layer.route.methods?.post)?.route.stack.at(-1).handle;
+    const res = createRes();
+
+    await handler(request, res);
+
+    expect(res.statusCode).toBe(500);
+    expect(res.body?.error?.code).toBe('TEAM_SAVE_FAILED');
+  });
+});
+
 describe('content service mutation durability', () => {
   const request = {
     body: { id: 'service-1', title: 'Service One' },
