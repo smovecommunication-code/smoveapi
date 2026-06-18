@@ -21,7 +21,7 @@ function normalizeMediaPayload(payload, mediaFiles = [], apiOrigin = API_ORIGIN)
     Object.keys(out).forEach((k) => {
       const v = out[k];
       const lower = k.toLowerCase();
-      const looksMediaField = ['media','image','logo','favicon','icon','thumbnail','cover','hero','background','visual'].some((token)=>lower.includes(token));
+      const looksMediaField = ['media','image','photo','avatar','portrait','logo','favicon','icon','thumbnail','cover','hero','background','visual'].some((token)=>lower.includes(token));
       if (typeof v === 'string' && looksMediaField) out[k] = normalizeValue(v);
       else out[k] = walk(v, k);
     });
