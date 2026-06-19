@@ -1961,9 +1961,23 @@ class ContentService {
     };
   }
 
+  normalizeTeamContactFields(member = {}) {
+    const email = requiredTrimmed(member.email) || requiredTrimmed(member.emailAddress);
+    const phone =
+      requiredTrimmed(member.phone) ||
+      requiredTrimmed(member.contact) ||
+      requiredTrimmed(member.contactPhone) ||
+      requiredTrimmed(member.telephone);
+    const contact = requiredTrimmed(member.contact) || phone;
+    const whatsapp = requiredTrimmed(member.whatsapp);
+
+    return { email, phone, contact, whatsapp };
+  }
+
   normalizeTeamMember(member, actor = {}) {
     const nowIso = new Date().toISOString();
     const id = requiredTrimmed(member?.id) || `team_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+    const contactFields = this.normalizeTeamContactFields(member);
     const socialLinks = Array.isArray(member?.socialLinks)
       ? member.socialLinks
           .map((link) => ({
@@ -1981,8 +1995,10 @@ class ContentService {
       role: requiredTrimmed(member?.role),
       bio: requiredTrimmed(member?.bio),
       photo: requiredTrimmed(member?.photo),
-      email: requiredTrimmed(member?.email),
-      phone: requiredTrimmed(member?.phone),
+      email: contactFields.email,
+      phone: contactFields.phone,
+      contact: contactFields.contact,
+      whatsapp: contactFields.whatsapp,
       socialLinks,
       order: Number.isFinite(Number(member?.order)) ? Number(member.order) : 0,
       status: TEAM_STATUSES.has(member?.status) ? member.status : 'published',
