@@ -29,6 +29,7 @@ class NewsletterService {
 
     const subscriber = await this.newsletterSubscriberRepository.upsertSubscription({
       email: payload.email,
+      name: payload.name ?? existing?.name ?? '',
       status: 'active',
       subscribedAt: existing?.subscribedAt ?? now,
       unsubscribedAt: null,
@@ -81,6 +82,36 @@ class NewsletterService {
         }),
       ),
     };
+  }
+
+
+  async sendCampaign(campaign, actor = {}) {
+    const result = await this.newsletterSubscriberRepository.list({ status: 'active', limit: 1000, page: 1 });
+    const recipients = result.items.filter((item) => item.status === 'active').map((item) => item.email);
+    const provider = process.env.SENDGRID_API_KEY ? 'sendgrid' : 'dry_run';
+
+    if (provider === 'sendgrid' && recipients.length > 0) {
+      const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          personalizations: [{ to: recipients.map((email) => ({ email })) }],
+          from: { email: process.env.NEWSLETTER_FROM_EMAIL || 'contact@smove-communication.com', name: process.env.NEWSLETTER_FROM_NAME || 'SMOVE Communication' },
+          subject: campaign.subject,
+          content: [
+            { type: 'text/plain', value: campaign.text || campaign.previewText || campaign.subject },
+            ...(campaign.html ? [{ type: 'text/html', value: campaign.html }] : []),
+          ],
+        }),
+      });
+      if (!response.ok) throw new Error(`NEWSLETTER_SENDGRID_${response.status}`);
+    }
+
+    logInfo('newsletter_campaign_sent', { provider, recipientCount: recipients.length, sentBy: actor.sentBy });
+    return { provider, recipientCount: recipients.length, subject: campaign.subject };
   }
 
   async updateSubscriberStatus(id, { status, source = 'cms' }) {

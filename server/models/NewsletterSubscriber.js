@@ -29,6 +29,12 @@ function createNewsletterSubscriberModel(mongoose) {
         type: Date,
         default: null,
       },
+      name: {
+        type: String,
+        trim: true,
+        maxlength: 120,
+        default: '',
+      },
       source: {
         type: String,
         trim: true,

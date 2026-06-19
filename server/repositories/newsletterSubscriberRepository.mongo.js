@@ -18,6 +18,7 @@ class MongoNewsletterSubscriberRepository {
       {
         $set: {
           status: payload.status,
+          name: payload.name ?? '',
           source: payload.source,
           linkedUserId: payload.linkedUserId ?? null,
           unsubscribedAt: payload.unsubscribedAt ?? null,
@@ -110,6 +111,7 @@ class MongoNewsletterSubscriberRepository {
     return {
       id: String(doc._id),
       email: doc.email,
+      name: doc.name ?? '',
       status: doc.status,
       subscribedAt: doc.subscribedAt,
       unsubscribedAt: doc.unsubscribedAt,

@@ -13,6 +13,7 @@ function normalizeString(value) {
 function validateNewsletterSubscribePayload(body) {
   const email = normalizeString(body?.email).toLowerCase();
   const source = normalizeString(body?.source).toLowerCase().slice(0, 40) || 'website';
+  const name = normalizeString(body?.name).slice(0, 120);
 
   if (!EMAIL_PATTERN.test(email)) {
     return { ok: false, error: { code: 'NEWSLETTER_INVALID_EMAIL', message: 'Email is invalid.' } };
@@ -22,9 +23,24 @@ function validateNewsletterSubscribePayload(body) {
     ok: true,
     data: {
       email,
+      name,
       source,
     },
   };
+}
+
+
+function validateNewsletterSendPayload(body) {
+  const subject = normalizeString(body?.subject).slice(0, 180);
+  const previewText = normalizeString(body?.previewText).slice(0, 220);
+  const html = normalizeString(body?.html);
+  const text = normalizeString(body?.text);
+
+  if (!subject || (!html && !text)) {
+    return { ok: false, error: { code: 'NEWSLETTER_INVALID_CAMPAIGN', message: 'Subject and message body are required.' } };
+  }
+
+  return { ok: true, data: { subject, previewText, html, text } };
 }
 
 function validateNewsletterUpdatePayload(body) {
@@ -73,6 +89,18 @@ function createNewsletterRoutes({ newsletterService }) {
     return sendSuccess(res, 200, data);
   });
 
+
+  router.post('/admin/send', async (req, res) => {
+    const parsed = validateNewsletterSendPayload(req.body);
+    if (!parsed.ok) {
+      return sendError(res, 400, parsed.error.code, parsed.error.message);
+    }
+
+    const result = await newsletterService.sendCampaign(parsed.data, { sentBy: req.session?.userId ?? 'unknown' });
+    res.setHeader('Cache-Control', 'no-store');
+    return sendSuccess(res, 200, result);
+  });
+
   router.patch('/admin/subscribers/:id', async (req, res) => {
     const parsed = validateNewsletterUpdatePayload(req.body);
     if (!parsed.ok) {
@@ -98,4 +126,5 @@ module.exports = {
   createNewsletterRoutes,
   validateNewsletterSubscribePayload,
   validateNewsletterUpdatePayload,
+  validateNewsletterSendPayload,
 };
