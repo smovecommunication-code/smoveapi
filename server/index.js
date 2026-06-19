@@ -61,6 +61,8 @@ async function bootstrap() {
     from: EMAIL_FROM,
     appBaseUrl: APP_BASE_URL,
     resendApiKey: RESEND_API_KEY,
+    newsletterFrom: process.env.NEWSLETTER_FROM_EMAIL ?? EMAIL_FROM,
+    newsletterReplyTo: process.env.NEWSLETTER_REPLY_TO ?? '',
     contactTo: CONTACT_TO_EMAIL,
   });
   const authService = new AuthService({
@@ -97,6 +99,10 @@ async function bootstrap() {
     mongoState: mongoState.reason,
     publicRegistrationEnabled: PUBLIC_REGISTRATION_ENABLED,
     emailDeliveryMode: emailService.getDeliveryMode(),
+    EMAIL_PROVIDER_STATUS: {
+      resendConfigured: emailService.getProviderStatus().resendConfigured,
+      smtpConfigured: emailService.getProviderStatus().smtpConfigured,
+    },
   });
 
   if (SEED_ADMIN_ON_START) {

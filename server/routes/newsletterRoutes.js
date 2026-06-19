@@ -4,6 +4,7 @@ const { Permissions } = require('../security/rbac');
 const { sendError, sendSuccess } = require('../utils/apiResponse');
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const TEST_EMAIL_PATTERN = EMAIL_PATTERN;
 const STATUS_VALUES = new Set(['active', 'unsubscribed']);
 
 function normalizeString(value) {
@@ -41,6 +42,14 @@ function validateNewsletterSendPayload(body) {
   }
 
   return { ok: true, data: { subject, previewText, html, text } };
+}
+
+function validateNewsletterTestPayload(body) {
+  const to = normalizeString(body?.to || body?.email).toLowerCase();
+  if (!TEST_EMAIL_PATTERN.test(to)) {
+    return { ok: false, error: { code: 'NEWSLETTER_INVALID_TEST_EMAIL', message: 'Destination email is invalid.' } };
+  }
+  return { ok: true, data: { to } };
 }
 
 function validateNewsletterUpdatePayload(body) {
@@ -89,6 +98,27 @@ function createNewsletterRoutes({ newsletterService }) {
     return sendSuccess(res, 200, data);
   });
 
+
+  router.get('/admin/email-status', async (_req, res) => {
+    const data = newsletterService.getEmailProviderStatus();
+    res.setHeader('Cache-Control', 'no-store');
+    return sendSuccess(res, 200, data);
+  });
+
+  router.post('/admin/test-email', async (req, res) => {
+    const parsed = validateNewsletterTestPayload(req.body);
+    if (!parsed.ok) {
+      return sendError(res, 400, parsed.error.code, parsed.error.message);
+    }
+
+    const result = await newsletterService.sendTestEmail(parsed.data, { sentBy: req.session?.userId ?? 'unknown' });
+    res.setHeader('Cache-Control', 'no-store');
+    if (result?.ok === false) {
+      const status = result.code === 'EMAIL_PROVIDER_NOT_CONFIGURED' ? 503 : 502;
+      return res.status(status).json(result);
+    }
+    return sendSuccess(res, 200, result);
+  });
 
   router.get('/admin/campaigns', async (req, res) => {
     const data = await newsletterService.listCampaigns({
@@ -151,4 +181,5 @@ module.exports = {
   validateNewsletterSubscribePayload,
   validateNewsletterUpdatePayload,
   validateNewsletterSendPayload,
+  validateNewsletterTestPayload,
 };

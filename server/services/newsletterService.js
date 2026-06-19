@@ -77,6 +77,38 @@ class NewsletterService {
     };
   }
 
+  getEmailProviderStatus() {
+    const status = this.emailService?.getProviderStatus?.() ?? { deliveryReady: false, mode: 'dev-fallback' };
+    return {
+      ...status,
+      provider: status.mode,
+      activeProvider: status.mode,
+    };
+  }
+
+  async sendTestEmail({ to }, actor = {}) {
+    const providerStatus = this.getEmailProviderStatus();
+    if (!providerStatus.deliveryReady) {
+      return { ...PROVIDER_NOT_CONFIGURED, provider: providerStatus.mode, providerResponse: providerStatus };
+    }
+
+    try {
+      const delivery = await this.emailService.sendTestEmail({ to });
+      logInfo('newsletter_test_email_sent', { provider: delivery.mode, sentBy: actor.sentBy ?? 'unknown' });
+      return { ok: true, provider: delivery.mode, status: 'sent', providerResponse: delivery.response ?? delivery };
+    } catch (error) {
+      logError('newsletter_test_email_failed', { provider: providerStatus.mode, message: error?.message, sentBy: actor.sentBy ?? 'unknown' });
+      return {
+        ok: false,
+        code: error?.code || 'EMAIL_PROVIDER_ERROR',
+        message: error?.message || 'Email provider failed.',
+        provider: providerStatus.mode,
+        status: 'failed',
+        providerResponse: error?.details || error?.providerStatus || {},
+      };
+    }
+  }
+
   async listCampaigns(filters) {
     if (typeof this.newsletterSubscriberRepository.listCampaigns !== 'function') {
       return { items: [], pagination: { page: 1, limit: 50, total: 0, pages: 1 } };
@@ -87,7 +119,7 @@ class NewsletterService {
   async sendCampaign(campaign, actor = {}) {
     const subscriberResult = await this.newsletterSubscriberRepository.list({ status: 'active', limit: 1000, page: 1 });
     const recipients = subscriberResult.items.filter((item) => item.status === 'active').map((item) => item.email);
-    const providerStatus = this.emailService?.getProviderStatus?.() ?? { deliveryReady: false, mode: 'dev-fallback' };
+    const providerStatus = this.getEmailProviderStatus();
     const baseRecord = {
       ...campaign,
       provider: providerStatus.mode,
@@ -103,6 +135,7 @@ class NewsletterService {
         code: PROVIDER_NOT_CONFIGURED.code,
         message: PROVIDER_NOT_CONFIGURED.message,
         deliveredCount: 0,
+        sentCount: 0,
         failedCount: recipients.length,
         recipients: recipients.map((email) => ({ email, status: 'failed', errorCode: PROVIDER_NOT_CONFIGURED.code, errorMessage: PROVIDER_NOT_CONFIGURED.message })),
         providerResponse: providerStatus,
@@ -112,7 +145,7 @@ class NewsletterService {
     }
 
     if (recipients.length === 0) {
-      const record = await this.persistCampaign({ ...baseRecord, status: 'skipped', code: 'NEWSLETTER_NO_ACTIVE_RECIPIENTS', message: 'Aucun abonné actif.', deliveredCount: 0, failedCount: 0, recipients: [], providerResponse: providerStatus });
+      const record = await this.persistCampaign({ ...baseRecord, status: 'failed', code: 'NEWSLETTER_NO_ACTIVE_RECIPIENTS', message: 'Aucun abonné actif.', deliveredCount: 0, sentCount: 0, failedCount: 0, recipients: [], providerResponse: providerStatus });
       return { ok: false, code: 'NEWSLETTER_NO_ACTIVE_RECIPIENTS', message: 'Aucun abonné actif.', provider: providerStatus.mode, recipientCount: 0, campaign: record };
     }
 
@@ -131,7 +164,7 @@ class NewsletterService {
     const status = deliveredCount === recipients.length ? 'sent' : (deliveredCount > 0 ? 'partial' : 'failed');
     const code = failedCount > 0 ? 'NEWSLETTER_DELIVERY_FAILED' : 'NEWSLETTER_DELIVERED';
     const message = failedCount > 0 ? `${failedCount} email(s) n’ont pas été acceptés par le fournisseur.` : 'Newsletter acceptée par le fournisseur email.';
-    const record = await this.persistCampaign({ ...baseRecord, status, code, message, deliveredCount, failedCount, recipients: recipientResults, providerResponse: providerStatus });
+    const record = await this.persistCampaign({ ...baseRecord, status, code, message, deliveredCount, sentCount: deliveredCount, failedCount, recipients: recipientResults, providerResponse: providerStatus });
 
     logInfo('newsletter_campaign_sent', { provider: providerStatus.mode, recipientCount: recipients.length, deliveredCount, failedCount, sentBy: actor.sentBy });
     return { ok: status === 'sent', code, message, provider: providerStatus.mode, recipientCount: recipients.length, deliveredCount, failedCount, subject: campaign.subject, campaign: record };

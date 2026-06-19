@@ -1,10 +1,5 @@
-let nodemailer = null;
-try {
-  // eslint-disable-next-line global-require
-  nodemailer = require('nodemailer');
-} catch (_error) {
-  nodemailer = null;
-}
+const net = require('net');
+const tls = require('tls');
 
 class EmailService {
   constructor(config = {}) {
@@ -16,29 +11,21 @@ class EmailService {
       smtpPass: config.smtpPass ?? '',
       resendApiKey: config.resendApiKey ?? '',
       from: config.from ?? 'noreply@localhost',
+      newsletterFrom: config.newsletterFrom ?? config.from ?? 'noreply@localhost',
+      newsletterReplyTo: config.newsletterReplyTo ?? '',
       appBaseUrl: config.appBaseUrl ?? 'http://localhost:5173',
       contactTo: config.contactTo ?? '',
     };
 
     this.smtpReady = Boolean(
-      nodemailer && this.config.smtpHost && this.config.smtpUser && this.config.smtpPass,
+      this.config.smtpHost,
     );
 
-    this.resendReady = Boolean(this.config.resendApiKey && this.config.from);
+    this.resendReady = Boolean(this.config.resendApiKey);
 
     this.deliveryReady = Boolean(this.config.contactTo && (this.resendReady || this.smtpReady));
 
-    this.transporter = this.smtpReady
-      ? nodemailer.createTransport({
-          host: this.config.smtpHost,
-          port: this.config.smtpPort,
-          secure: this.config.smtpSecure,
-          auth: {
-            user: this.config.smtpUser,
-            pass: this.config.smtpPass,
-          },
-        })
-      : null;
+    this.transporter = null;
   }
 
   isDeliveryReady() {
@@ -63,6 +50,9 @@ class EmailService {
     return {
       deliveryReady: Boolean(this.resendReady || this.smtpReady),
       mode: this.getDeliveryMode(),
+      activeProvider: this.getDeliveryMode(),
+      resendConfigured: this.resendReady,
+      smtpConfigured: this.smtpReady,
       resendReady: this.resendReady,
       smtpReady: this.smtpReady,
       hasFrom: Boolean(this.config.from),
@@ -74,7 +64,8 @@ class EmailService {
     };
   }
 
-  async sendMail({ to, subject, text, html, replyTo }) {
+  async sendMail({ to, subject, text, html, replyTo, from }) {
+    const sender = from || this.config.from;
     if (this.resendReady) {
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -83,7 +74,7 @@ class EmailService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: this.config.from,
+          from: sender,
           to: [to],
           subject,
           text,
@@ -99,24 +90,148 @@ class EmailService {
         throw error;
       }
 
-      return { delivered: true, mode: 'resend' };
+      const payload = await response.json().catch(() => ({}));
+      return { delivered: true, mode: 'resend', provider: 'resend', id: payload.id || '', response: payload };
     }
 
-    if (this.smtpReady && this.transporter) {
-      await this.transporter.sendMail({
-        from: this.config.from,
-        to,
-        subject,
-        text,
-        html: html || undefined,
-        replyTo: replyTo || undefined,
-      });
-      return { delivered: true, mode: 'smtp' };
+    if (this.smtpReady) {
+      const info = await this.sendViaSmtp({ from: sender, to, subject, text, html, replyTo });
+      return { delivered: true, mode: 'smtp', provider: 'smtp', response: info, id: info.messageId || '' };
     }
 
-    return { delivered: false, mode: 'dev' };
+    return { delivered: false, mode: 'dev-fallback', provider: 'dev-fallback', response: {} };
   }
 
+
+  encodeHeader(value) {
+    const input = String(value ?? '');
+    return /^[\x00-\x7F]*$/.test(input) ? input : `=?UTF-8?B?${Buffer.from(input, 'utf8').toString('base64')}?=`;
+  }
+
+  formatAddress(value) {
+    return String(value ?? '').replace(/[\r\n]/g, '').trim();
+  }
+
+  buildMimeMessage({ from, to, subject, text, html, replyTo }) {
+    const messageId = `<${Date.now()}.${Math.random().toString(16).slice(2)}@smovecommunication.com>`;
+    const headers = [
+      `From: ${this.formatAddress(from)}`,
+      `To: ${this.formatAddress(to)}`,
+      `Subject: ${this.encodeHeader(subject)}`,
+      `Message-ID: ${messageId}`,
+      `Date: ${new Date().toUTCString()}`,
+      'MIME-Version: 1.0',
+    ];
+    if (replyTo) headers.push(`Reply-To: ${this.formatAddress(replyTo)}`);
+
+    if (html) {
+      const boundary = `smove-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      headers.push(`Content-Type: multipart/alternative; boundary="${boundary}"`);
+      return {
+        messageId,
+        data: [
+          ...headers,
+          '',
+          `--${boundary}`,
+          'Content-Type: text/plain; charset=UTF-8',
+          'Content-Transfer-Encoding: 8bit',
+          '',
+          text || '',
+          `--${boundary}`,
+          'Content-Type: text/html; charset=UTF-8',
+          'Content-Transfer-Encoding: 8bit',
+          '',
+          html,
+          `--${boundary}--`,
+          '',
+        ].join('\r\n'),
+      };
+    }
+
+    headers.push('Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: 8bit');
+    return { messageId, data: [...headers, '', text || ''].join('\r\n') };
+  }
+
+  async sendViaSmtp({ from, to, subject, text, html, replyTo }) {
+    let socket = this.config.smtpSecure
+      ? tls.connect({ host: this.config.smtpHost, port: this.config.smtpPort, servername: this.config.smtpHost })
+      : net.connect({ host: this.config.smtpHost, port: this.config.smtpPort });
+    socket.setEncoding('utf8');
+
+    let buffer = '';
+    const readResponse = () => new Promise((resolve, reject) => {
+      const onData = (chunk) => {
+        buffer += chunk;
+        const lines = buffer.split(/\r?\n/).filter(Boolean);
+        const last = lines[lines.length - 1] || '';
+        if (/^\d{3} /.test(last)) {
+          socket.off('data', onData);
+          const response = buffer;
+          buffer = '';
+          resolve(response);
+        }
+      };
+      socket.on('data', onData);
+      socket.once('error', reject);
+    });
+    const expect = async (command, okCodes) => {
+      if (command) socket.write(`${command}\r\n`);
+      const response = await readResponse();
+      const code = response.slice(0, 3);
+      if (!okCodes.includes(code)) throw new Error(`SMTP command failed (${code}): ${response.trim()}`);
+      return response;
+    };
+
+    await expect('', ['220']);
+    await expect(`EHLO ${this.config.smtpHost}`, ['250']);
+    if (!this.config.smtpSecure && this.config.smtpPort === 587) {
+      await expect('STARTTLS', ['220']);
+      const secureSocket = tls.connect({ socket, servername: this.config.smtpHost });
+      await new Promise((resolve) => secureSocket.once('secureConnect', resolve));
+      socket = secureSocket;
+      socket.setEncoding('utf8');
+      await expect(`EHLO ${this.config.smtpHost}`, ['250']);
+    }
+    if (this.config.smtpUser || this.config.smtpPass) {
+      await expect('AUTH LOGIN', ['334']);
+      await expect(Buffer.from(this.config.smtpUser).toString('base64'), ['334']);
+      await expect(Buffer.from(this.config.smtpPass).toString('base64'), ['235']);
+    }
+    const built = this.buildMimeMessage({ from, to, subject, text, html, replyTo });
+    await expect(`MAIL FROM:<${this.extractEmail(from)}>`, ['250']);
+    await expect(`RCPT TO:<${this.extractEmail(to)}>`, ['250', '251']);
+    await expect('DATA', ['354']);
+    socket.write(`${built.data.replace(/\r?\n\./g, '\r\n..')}\r\n.\r\n`);
+    await expect('', ['250']);
+    socket.write('QUIT\r\n');
+    socket.end();
+    return { accepted: [to], rejected: [], messageId: built.messageId };
+  }
+
+  extractEmail(value) {
+    const match = String(value ?? '').match(/<([^>]+)>/);
+    return (match ? match[1] : String(value ?? '')).trim();
+  }
+
+
+  async sendTestEmail({ to }) {
+    const status = this.getProviderStatus();
+    if (!status.deliveryReady) {
+      const error = new Error('Aucun fournisseur email n’est configuré.');
+      error.code = 'EMAIL_PROVIDER_NOT_CONFIGURED';
+      error.providerStatus = status;
+      throw error;
+    }
+
+    return this.sendMail({
+      to,
+      subject: 'SMOVE newsletter test email',
+      text: 'Ceci est un email de test envoyé depuis le CMS SMOVE.',
+      html: '<p>Ceci est un email de test envoyé depuis le CMS SMOVE.</p>',
+      from: this.config.newsletterFrom || this.config.from,
+      replyTo: this.config.newsletterReplyTo || undefined,
+    });
+  }
 
   async sendNewsletterEmail({ to, subject, text, html, previewText }) {
     const result = await this.sendMail({
@@ -124,6 +239,8 @@ class EmailService {
       subject,
       text: text || previewText || subject,
       html: html || undefined,
+      from: this.config.newsletterFrom || this.config.from,
+      replyTo: this.config.newsletterReplyTo || undefined,
     });
 
     return result.delivered ? { ...result, status: 'sent' } : { ...result, status: 'failed' };

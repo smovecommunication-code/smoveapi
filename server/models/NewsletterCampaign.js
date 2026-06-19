@@ -1,4 +1,4 @@
-const NEWSLETTER_CAMPAIGN_STATUSES = ['sent', 'failed', 'partial', 'skipped'];
+const NEWSLETTER_CAMPAIGN_STATUSES = ['draft', 'sending', 'sent', 'partial', 'failed'];
 
 function createNewsletterCampaignModel(mongoose) {
   const modelName = 'NewsletterCampaign';
@@ -29,6 +29,7 @@ function createNewsletterCampaignModel(mongoose) {
       sentAt: { type: Date, default: Date.now, index: true },
       recipientCount: { type: Number, default: 0 },
       deliveredCount: { type: Number, default: 0 },
+      sentCount: { type: Number, default: 0 },
       failedCount: { type: Number, default: 0 },
       recipients: { type: [recipientSchema], default: [] },
       providerResponse: { type: mongoose.Schema.Types.Mixed, default: {} },

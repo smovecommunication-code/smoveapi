@@ -130,6 +130,8 @@ function createApp(deps = {}) {
       smtpUser: process.env.SMTP_USER ?? '',
       smtpPass: process.env.SMTP_PASS ?? '',
       resendApiKey: process.env.RESEND_API_KEY ?? '',
+      newsletterFrom: process.env.NEWSLETTER_FROM_EMAIL ?? process.env.EMAIL_FROM ?? 'noreply@localhost',
+      newsletterReplyTo: process.env.NEWSLETTER_REPLY_TO ?? '',
       from: process.env.EMAIL_FROM ?? 'noreply@localhost',
       appBaseUrl: process.env.APP_BASE_URL ?? FRONTEND_ORIGIN,
       contactTo: process.env.CONTACT_TO_EMAIL ?? '',
