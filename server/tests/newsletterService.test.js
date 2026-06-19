@@ -56,3 +56,31 @@ describe('NewsletterService', () => {
     expect(result.summary).toEqual({ total: 1, active: 1, unsubscribed: 0 });
   });
 });
+
+describe('NewsletterService delivery diagnostics', () => {
+  it('records and reports missing email provider instead of fake success', async () => {
+    const repository = {
+      list: vi.fn(async () => ({
+        items: [{ id: 'sub_1', email: 'john@example.com', status: 'active' }],
+        pagination: { page: 1, limit: 1000, total: 1, pages: 1 },
+        summary: { total: 1, active: 1, unsubscribed: 0 },
+      })),
+      createCampaign: vi.fn(async (payload) => ({ id: 'camp_1', ...payload })),
+    };
+    const service = new NewsletterService({
+      newsletterSubscriberRepository: repository,
+      emailService: { getProviderStatus: () => ({ deliveryReady: false, mode: 'dev-fallback' }) },
+    });
+
+    const result = await service.sendCampaign({ subject: 'Hello', html: '<p>Hello</p>' }, { sentBy: 'u_1' });
+
+    expect(result.ok).toBe(false);
+    expect(result.code).toBe('EMAIL_PROVIDER_NOT_CONFIGURED');
+    expect(repository.createCampaign).toHaveBeenCalledWith(expect.objectContaining({
+      status: 'failed',
+      code: 'EMAIL_PROVIDER_NOT_CONFIGURED',
+      recipientCount: 1,
+      failedCount: 1,
+    }));
+  });
+});

@@ -59,7 +59,22 @@ class EmailService {
     return `${this.config.appBaseUrl.replace(/\/$/, '')}/#reset-password?token=${encodeURIComponent(token)}`;
   }
 
-  async sendMail({ to, subject, text, replyTo }) {
+  getProviderStatus() {
+    return {
+      deliveryReady: Boolean(this.resendReady || this.smtpReady),
+      mode: this.getDeliveryMode(),
+      resendReady: this.resendReady,
+      smtpReady: this.smtpReady,
+      hasFrom: Boolean(this.config.from),
+      hasResendApiKey: Boolean(this.config.resendApiKey),
+      hasSmtpHost: Boolean(this.config.smtpHost),
+      hasSmtpPort: Boolean(this.config.smtpPort),
+      hasSmtpUser: Boolean(this.config.smtpUser),
+      hasSmtpPass: Boolean(this.config.smtpPass),
+    };
+  }
+
+  async sendMail({ to, subject, text, html, replyTo }) {
     if (this.resendReady) {
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -72,6 +87,7 @@ class EmailService {
           to: [to],
           subject,
           text,
+          html: html || undefined,
           reply_to: replyTo || undefined,
         }),
       });
@@ -92,12 +108,25 @@ class EmailService {
         to,
         subject,
         text,
+        html: html || undefined,
         replyTo: replyTo || undefined,
       });
       return { delivered: true, mode: 'smtp' };
     }
 
     return { delivered: false, mode: 'dev' };
+  }
+
+
+  async sendNewsletterEmail({ to, subject, text, html, previewText }) {
+    const result = await this.sendMail({
+      to,
+      subject,
+      text: text || previewText || subject,
+      html: html || undefined,
+    });
+
+    return result.delivered ? { ...result, status: 'sent' } : { ...result, status: 'failed' };
   }
 
   async sendVerificationEmail({ to, name, token, expiresAt }) {

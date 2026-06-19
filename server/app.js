@@ -151,7 +151,7 @@ function createApp(deps = {}) {
   const newsletterService =
     deps.newsletterService ??
     (newsletterSubscriberRepository
-      ? new NewsletterService({ newsletterSubscriberRepository, userRepository })
+      ? new NewsletterService({ newsletterSubscriberRepository, userRepository, emailService })
       : null);
 
   if (!contactService || !newsletterService) {

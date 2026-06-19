@@ -1,8 +1,10 @@
 const { createNewsletterSubscriberModel } = require('../models/NewsletterSubscriber');
+const { createNewsletterCampaignModel } = require('../models/NewsletterCampaign');
 
 class MongoNewsletterSubscriberRepository {
   constructor({ mongoose }) {
     this.NewsletterSubscriberModel = createNewsletterSubscriberModel(mongoose);
+    this.NewsletterCampaignModel = createNewsletterCampaignModel(mongoose);
   }
 
   async findByEmail(email) {
@@ -93,6 +95,51 @@ class MongoNewsletterSubscriberRepository {
     };
   }
 
+
+  async createCampaign(payload) {
+    const doc = await this.NewsletterCampaignModel.create({
+      subject: payload.subject,
+      previewText: payload.previewText ?? '',
+      html: payload.html ?? '',
+      text: payload.text ?? '',
+      provider: payload.provider,
+      status: payload.status,
+      code: payload.code ?? '',
+      message: payload.message ?? '',
+      sentBy: payload.sentBy ?? 'unknown',
+      sentAt: payload.sentAt ?? new Date(),
+      recipientCount: payload.recipientCount ?? 0,
+      deliveredCount: payload.deliveredCount ?? 0,
+      failedCount: payload.failedCount ?? 0,
+      recipients: payload.recipients ?? [],
+      providerResponse: payload.providerResponse ?? {},
+    });
+
+    return this.serializeCampaign(doc);
+  }
+
+  async listCampaigns({ page = 1, limit = 50, status = 'all' } = {}) {
+    const normalizedPage = Math.max(1, Number(page) || 1);
+    const normalizedLimit = Math.min(100, Math.max(1, Number(limit) || 50));
+    const skip = (normalizedPage - 1) * normalizedLimit;
+    const query = status && status !== 'all' ? { status } : {};
+
+    const [docs, total] = await Promise.all([
+      this.NewsletterCampaignModel.find(query).sort({ sentAt: -1, createdAt: -1 }).skip(skip).limit(normalizedLimit),
+      this.NewsletterCampaignModel.countDocuments(query),
+    ]);
+
+    return {
+      items: docs.map((doc) => this.serializeCampaign(doc)),
+      pagination: {
+        page: normalizedPage,
+        limit: normalizedLimit,
+        total,
+        pages: Math.max(1, Math.ceil(total / normalizedLimit)),
+      },
+    };
+  }
+
   buildMongoQuery({ query = '', status = 'all', source = 'all' } = {}) {
     const mongoQuery = {};
     if (query.trim()) {
@@ -105,6 +152,27 @@ class MongoNewsletterSubscriberRepository {
       mongoQuery.source = source;
     }
     return mongoQuery;
+  }
+
+  serializeCampaign(doc) {
+    return {
+      id: String(doc._id),
+      subject: doc.subject,
+      previewText: doc.previewText ?? '',
+      provider: doc.provider,
+      status: doc.status,
+      code: doc.code ?? '',
+      message: doc.message ?? '',
+      sentBy: doc.sentBy ?? 'unknown',
+      sentAt: doc.sentAt,
+      recipientCount: doc.recipientCount ?? 0,
+      deliveredCount: doc.deliveredCount ?? 0,
+      failedCount: doc.failedCount ?? 0,
+      recipients: doc.recipients ?? [],
+      providerResponse: doc.providerResponse ?? {},
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    };
   }
 
   serialize(doc) {

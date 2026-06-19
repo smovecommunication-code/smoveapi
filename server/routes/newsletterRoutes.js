@@ -90,6 +90,17 @@ function createNewsletterRoutes({ newsletterService }) {
   });
 
 
+  router.get('/admin/campaigns', async (req, res) => {
+    const data = await newsletterService.listCampaigns({
+      page: req.query?.page,
+      limit: req.query?.limit,
+      status: normalizeString(req.query?.status || 'all').toLowerCase(),
+    });
+
+    res.setHeader('Cache-Control', 'no-store');
+    return sendSuccess(res, 200, data);
+  });
+
   router.post('/admin/send', async (req, res) => {
     const parsed = validateNewsletterSendPayload(req.body);
     if (!parsed.ok) {
@@ -98,6 +109,19 @@ function createNewsletterRoutes({ newsletterService }) {
 
     const result = await newsletterService.sendCampaign(parsed.data, { sentBy: req.session?.userId ?? 'unknown' });
     res.setHeader('Cache-Control', 'no-store');
+    if (result?.ok === false) {
+      const status = result.code === 'EMAIL_PROVIDER_NOT_CONFIGURED' ? 503 : 409;
+      return res.status(status).json({
+        ok: false,
+        code: result.code,
+        message: result.message,
+        provider: result.provider,
+        recipientCount: result.recipientCount,
+        deliveredCount: result.deliveredCount ?? 0,
+        failedCount: result.failedCount ?? result.recipientCount ?? 0,
+        campaign: result.campaign ?? null,
+      });
+    }
     return sendSuccess(res, 200, result);
   });
 
