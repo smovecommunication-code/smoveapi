@@ -1278,7 +1278,7 @@ class ContentService {
 
   saveSettings(payload, actor = {}) {
     const state = this.readState();
-    if (Array.isArray(payload?.footer?.socialLinks) && payload.footer.socialLinks.some((entry) => !entry || typeof entry !== 'object' || !this.isValidSocialUrl(`${entry.url || ''}`.trim()))) {
+    if (Array.isArray(payload?.footer?.socialLinks) && payload.footer.socialLinks.some((entry) => !entry || typeof entry !== 'object' || !`${entry.platform || ''}`.trim() || !`${entry.label || ''}`.trim() || !this.isValidSocialUrl(`${entry.url || ''}`.trim(), `${entry.platform || ''}`.trim().toLowerCase()))) {
       return { ok: false, error: { code: 'SETTINGS_VALIDATION_ERROR', message: 'Invalid social link URL.' } };
     }
     const normalized = this.registerSettingsMediaReferences(this.normalizeSettings(payload || {}), { state });
@@ -2929,15 +2929,18 @@ class ContentService {
 
   normalizeSocialLinks(candidate) {
     if (!Array.isArray(candidate)) return [];
-    return candidate.flatMap((entry) => {
+    return candidate.flatMap((entry, index) => {
       if (!entry || typeof entry !== 'object') return [];
       const platform = `${entry.platform || ''}`.trim().toLowerCase();
       const label = `${entry.label || ''}`.trim();
-      const url = `${entry.url || ''}`.trim();
-      if (!platform || !label || !url || !this.isValidSocialUrl(url)) return [];
+      const url = this.normalizeSocialUrl(`${entry.url || ''}`, platform);
+      if (!platform || !label || !url || !this.isValidSocialUrl(url, platform)) return [];
       const icon = `${entry.icon || ''}`.trim();
-      return [{ platform, label, url, enabled: entry.enabled !== false, icon }];
-    });
+      const rawOrder = Number(entry.order);
+      const order = Number.isFinite(rawOrder) ? Math.round(rawOrder) : index;
+      const id = `${entry.id || ''}`.trim() || `social_${platform}_${index}`;
+      return [{ id, platform, label, url, enabled: entry.enabled !== false, icon, order }];
+    }).sort((a, b) => a.order - b.order);
   }
 
   normalizeLogoSize(candidate) {
@@ -2946,10 +2949,18 @@ class ContentService {
     return { desktop: clamp(candidate?.desktop, defaults.desktop), tablet: clamp(candidate?.tablet, defaults.tablet), mobile: clamp(candidate?.mobile, defaults.mobile) };
   }
 
-  isValidSocialUrl(value) {
-    if (/^mailto:[^@\s]+@[^@\s]+\.[^@\s]+$/i.test(value)) return true;
+  normalizeSocialUrl(value, platform = '') {
+    const normalized = `${value || ''}`.trim();
+    if (platform === 'email' && /^[^@\s]+@[^@\s]+\.[^@\s]+$/i.test(normalized)) return `mailto:${normalized}`;
+    return normalized;
+  }
+
+  isValidSocialUrl(value, platform = '') {
+    const normalized = this.normalizeSocialUrl(value, platform);
+    if (platform === 'email') return /^mailto:[^@\s]+@[^@\s]+\.[^@\s]+$/i.test(normalized);
+    if (/^mailto:[^@\s]+@[^@\s]+\.[^@\s]+$/i.test(normalized)) return true;
     try {
-      const url = new URL(value);
+      const url = new URL(normalized);
       return url.protocol === 'https:' || url.protocol === 'http:';
     } catch {
       return false;

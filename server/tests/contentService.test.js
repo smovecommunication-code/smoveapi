@@ -1548,11 +1548,11 @@ describe('ContentService production hardening', () => {
     const service = new ContentService({ contentRepository: new MemoryContentRepository() });
     const settings = service.normalizeSettings({
       branding: { logoSize: { desktop: 500, tablet: 101.7, mobile: 12 } },
-      footer: { socialLinks: [{ platform: 'custom', label: 'Community', url: 'https://example.com', enabled: false, icon: ' media:community-icon ' }] },
+      footer: { socialLinks: [{ id: 'social_custom', platform: 'custom', label: 'Community', url: 'https://example.com', enabled: false, icon: ' media:community-icon ', order: 3 }] },
     });
 
     expect(settings.branding.logoSize).toEqual({ desktop: 320, tablet: 102, mobile: 40 });
-    expect(settings.footer.socialLinks[0]).toEqual({ platform: 'custom', label: 'Community', url: 'https://example.com', enabled: false, icon: 'media:community-icon' });
+    expect(settings.footer.socialLinks[0]).toEqual({ id: 'social_custom', platform: 'custom', label: 'Community', url: 'https://example.com', enabled: false, icon: 'media:community-icon', order: 3 });
   });
 
   it('reports invalid media references in synchronization diagnostics', () => {
